@@ -1,0 +1,69 @@
+name: CI - Talent Casting System
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  frontend-quality:
+    name: Frontend Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'talent-casting-form/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: talent-casting-form
+        run: npm ci
+
+      - name: Build application
+        working-directory: talent-casting-form
+        run: npm run build
+
+      - name: TypeScript type check
+        working-directory: talent-casting-form
+        run: npx tsc --noEmit
+
+      - name: Lint check
+        working-directory: talent-casting-form
+        run: npm run lint
+
+      - name: Run tests
+        working-directory: talent-casting-form
+        run: npm test --passWithNoTests
+
+  security-check:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Security audit
+        working-directory: talent-casting-form
+        run: npm audit --audit-level moderate
+
+      - name: Check for sensitive files
+        run: |
+          if find . -name ".env*" -not -path "./.git/*" -not -name ".env.example" | grep -q .; then
+            echo "❌ Environment files found in repository!"
+            exit 1
+          else
+            echo "✅ No environment files found"
+          fi
