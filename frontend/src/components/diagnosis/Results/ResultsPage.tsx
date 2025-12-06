@@ -63,29 +63,87 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
     }
   };
 
+  // フォーム選択値をメッセージテンプレートキーに変換するマッピング関数
+  const mapIndustryToTemplateKey = (formIndustry: string): string => {
+    const industryMapping: Record<string, string> = {
+      // 美容・化粧品関連
+      '化粧品・ヘアケア・オーラルケア': '美容・化粧品',
+      'トイレタリー': '美容・化粧品',
+
+      // 食品・飲料関連
+      '食品': '食品・飲料',
+      '菓子・氷菓': '食品・飲料',
+      '乳製品': '食品・飲料',
+      '清涼飲料水': '食品・飲料',
+      'アルコール飲料': '食品・飲料',
+      'フードサービス': '食品・飲料',
+
+      // 医療・ヘルスケア関連
+      '医薬品・医療・健康食品': '医療・ヘルスケア',
+
+      // 自動車・モビリティー関連
+      '自動車関連': '自動車・モビリティー',
+
+      // IT・テクノロジー関連
+      '通信・IT': 'IT・テクノロジー',
+      'ゲーム・エンターテイメント・アプリ': 'IT・テクノロジー',
+      '家電': 'IT・テクノロジー',
+
+      // ファッション・アパレル関連
+      'ファッション': 'ファッション・アパレル',
+      '貴金属': 'ファッション・アパレル',
+
+      // 金融・不動産関連
+      '金融・不動産': '金融・保険',
+
+      // 流通・サービス関連
+      '流通・通販': 'その他',
+      'エネルギー・輸送・交通': 'その他',
+
+      // 教育関連
+      '教育・出版・公共団体': '教育',
+
+      // 旅行・レジャー関連
+      '観光': '旅行・レジャー'
+    };
+
+    return industryMapping[formIndustry] || 'その他';
+  };
+
   const generatePersonalizedMessage = (): string => {
     const companyName = formData.q4 || '貴社';
-    const industry = formData.q2;
+    const originalIndustry = formData.q2;
     const purpose = formData.q3_2;
+
+    // フォーム選択値をテンプレートキーに変換
+    const mappedIndustry = mapIndustryToTemplateKey(originalIndustry || '');
 
     // デバッグログ: パーソナライゼーションデータの確認（本番環境では無効化）
     if (process.env.NODE_ENV !== 'production') {
       console.log('🎭 パーソナライゼーションデータ確認:', {
         q4_companyName: formData.q4,
-        q2_industry: formData.q2,
+        q2_industry_original: originalIndustry,
+        q2_industry_mapped: mappedIndustry,
         q3_2_purpose: formData.q3_2,
         formDataFull: formData
       });
     }
 
     // 業界と目的が両方選択されている場合は詳細なメッセージを生成
-    if (industry && purpose) {
+    if (originalIndustry && purpose) {
       try {
-        return generateDetailedPersonalizedMessage({
+        const result = generateDetailedPersonalizedMessage({
           companyName,
-          industry,
+          industry: mappedIndustry,
           purpose
         });
+
+        // 成功ログを出力
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('✅ 詳細パーソナライズメッセージ生成成功');
+        }
+
+        return result;
       } catch (error) {
         if (process.env.NODE_ENV !== 'production') {
           console.warn('詳細メッセージ生成に失敗、フォールバックを使用:', error);
@@ -96,7 +154,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
     // フォールバック用のシンプルメッセージ
     return generateSimplePersonalizedMessage({
       companyName,
-      industry: industry || '業界',
+      industry: mappedIndustry || '業界',
       purpose: purpose || 'ブランド価値向上'
     });
   };

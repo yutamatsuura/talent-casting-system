@@ -12,6 +12,7 @@ import {
   CardContent,
   Chip,
   Divider,
+  CircularProgress,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -291,11 +292,21 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
           pb: { xs: 10, md: 3 } // モバイルでは下部の固定ボタン分のスペースを確保
         }}>
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-              <Typography>読み込み中...</Typography>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 4,
+              minHeight: 200
+            }}>
+              <CircularProgress sx={{ mb: 2 }} />
+              <Typography variant="body2" color="text.secondary">
+                詳細情報を読み込み中...
+              </Typography>
             </Box>
           ) : (
-            <>
+            <Box sx={{ minHeight: 200 }}>
               {/* CM出演履歴タイムライン */}
               {detailData?.cm_history && detailData.cm_history.length > 0 && (
                 <Box sx={{ mb: { xs: 3, md: 4 } }}>
@@ -569,7 +580,7 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
                   このタレントについて相談する
                 </Button>
               </Box>
-            </>
+            </Box>
           )}
         </Box>
       </DialogContent>
