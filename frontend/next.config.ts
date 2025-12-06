@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https:",
               "font-src 'self' data:",
               "connect-src 'self' http://localhost:8432 https:",
-              "frame-ancestors https://e-spirit.vercel.app https://landing-puce-rho-58.vercel.app https://landing-khljzm4be-yutamatsuuras-projects.vercel.app http://localhost:3247 'self'",
+              "frame-ancestors https://e-spirit.vercel.app https://landing-puce-rho-58.vercel.app http://localhost:3247 'self'",
             ].join('; '),
           },
           {
