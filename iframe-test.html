@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe Modal Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        .modal-content {
+            position: relative;
+            margin: 2% auto;
+            width: 95%;
+            max-width: 1200px;
+            height: 90%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .close {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        .status { margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Iframe Modal Integration Test</h1>
+
+    <button onclick="openDiagnosisModal()">診断を開始する（モーダル形式）</button>
+
+    <div class="status" id="status">
+        <strong>Status:</strong> Ready for testing
+    </div>
+
+    <div class="status">
+        <strong>Test Steps:</strong><br>
+        1. Click "診断を開始する" button<br>
+        2. Complete the diagnosis in the iframe modal<br>
+        3. Verify postMessage communication<br>
+        4. Check full-page results redirection
+    </div>
+
+    <!-- iframe Modal -->
+    <div id="diagnosisModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeDiagnosisModal()">✕</button>
+            <iframe id="diagnosisFrame" src="" loading="lazy"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const DIAGNOSIS_URL = 'https://talent-casting-diagnosis.vercel.app/diagnosis';
+        const RESULTS_URL = 'https://talent-casting-diagnosis.vercel.app/results';
+
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = '<strong>Status:</strong> ' + message;
+        }
+
+        function openDiagnosisModal() {
+            updateStatus('Opening diagnosis modal...');
+            const modal = document.getElementById('diagnosisModal');
+            const iframe = document.getElementById('diagnosisFrame');
+
+            iframe.src = DIAGNOSIS_URL;
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            updateStatus('Modal opened, loading diagnosis system...');
+        }
+
+        function closeDiagnosisModal() {
+            updateStatus('Closing modal...');
+            const modal = document.getElementById('diagnosisModal');
+            const iframe = document.getElementById('diagnosisFrame');
+
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            iframe.src = '';
+
+            updateStatus('Modal closed');
+        }
+
+        // Listen for messages from the iframe
+        window.addEventListener('message', function(event) {
+            console.log('Received message:', event.data);
+            updateStatus('Message received: ' + JSON.stringify(event.data));
+
+            // Check origin for security
+            const allowedOrigins = [
+                'https://talent-casting-diagnosis.vercel.app',
+                'http://localhost:3248'
+            ];
+
+            if (!allowedOrigins.some(origin => event.origin.includes(origin))) {
+                console.warn('Unknown origin:', event.origin);
+                return;
+            }
+
+            if (event.data && event.data.type === 'diagnosis_complete') {
+                updateStatus('Diagnosis completed! Redirecting to results...');
+                closeDiagnosisModal();
+
+                // Redirect to results page with data
+                setTimeout(() => {
+                    const encodedData = encodeURIComponent(JSON.stringify(event.data.data));
+                    window.location.href = `${RESULTS_URL}?data=${encodedData}`;
+                }, 1000);
+            }
+        });
+
+        // ESC key to close modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeDiagnosisModal();
+            }
+        });
+    </script>
+</body>
+</html>

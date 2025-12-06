@@ -1,0 +1,270 @@
+====================================================================================================
+TARGET_SEGMENTS TABLE - DETAILED STRUCTURE & CONTENT VERIFICATION REPORT
+====================================================================================================
+
+Generated: 2025-12-03
+Database: Neon PostgreSQL (talent-casting system)
+
+
+====================================================================================================
+1. TABLE STRUCTURE
+====================================================================================================
+
+Columns Definition:
+
+Position Column Name          Data Type            Nullable   Default
+----------------------------------------------------------------------------------------------------
+1     id                   integer              YES        nextval('target_segments_id_seq'::regclass)
+2     code                 character varying    YES        None
+3     name                 character varying    YES        None
+4     gender               character varying    YES        None
+5     age_range            character varying    YES        None
+6     display_order        integer              YES        None
+7     created_at           timestamp without time zone YES        now()
+8     updated_at           timestamp without time zone YES        now()
+
+====================================================================================================
+2. INDEXES
+====================================================================================================
+
+Indexes:
+
+  Index Name: idx_target_segments_code
+  Definition: CREATE INDEX idx_target_segments_code ON public.target_segments USING btree (code)
+
+  Index Name: idx_target_segments_display_order
+  Definition: CREATE INDEX idx_target_segments_display_order ON public.target_segments USING btree (display_order)
+
+  Index Name: ix_target_segments_code
+  Definition: CREATE UNIQUE INDEX ix_target_segments_code ON public.target_segments USING btree (code)
+
+  Index Name: target_segments_pkey
+  Definition: CREATE UNIQUE INDEX target_segments_pkey ON public.target_segments USING btree (id)
+
+====================================================================================================
+3. CONSTRAINTS
+====================================================================================================
+
+Total constraints: 9
+
+Constraints:
+  - 2200_57365_1_not_null
+  - 2200_57365_2_not_null
+  - 2200_57365_3_not_null
+  - 2200_57365_4_not_null
+  - 2200_57365_5_not_null
+  - 2200_57365_6_not_null
+  - 2200_57365_7_not_null
+  - 2200_57365_8_not_null
+  - target_segments_pkey
+
+====================================================================================================
+4. DATA CONTENT - ALL RECORDS
+====================================================================================================
+
+Total Records: 8
+
+ID    Code       Name                 Gender     Age Range       Order   
+----------------------------------------------------------------------------------------------------
+9     F2034      女性20-34歳             女性         20-34歳          1       
+10    F3549      女性35-49歳             女性         35-49歳          2       
+11    F5069      女性50-69歳             女性         50-69歳          3       
+12    M2034      男性20-34歳             男性         20-34歳          4       
+13    M3549      男性35-49歳             男性         35-49歳          5       
+14    M5069      男性50-69歳             男性         50-69歳          6       
+15    M1219      男性12-19歳             男性         12-19歳          1       
+17    F1219      女性12-19歳             女性         12-19歳          5       
+
+====================================================================================================
+5. DETAILED RECORD INFORMATION
+====================================================================================================
+
+[Record 1]
+  ID:            9
+  Code:          F2034
+  Name:          女性20-34歳
+  Gender:        女性
+  Age Range:     20-34歳
+  Display Order: 1
+  Created:       2025-12-02 04:45:27.485910
+  Updated:       2025-12-02 06:52:33.351939
+
+[Record 2]
+  ID:            10
+  Code:          F3549
+  Name:          女性35-49歳
+  Gender:        女性
+  Age Range:     35-49歳
+  Display Order: 2
+  Created:       2025-12-02 04:45:27.657947
+  Updated:       2025-12-02 06:52:33.351939
+
+[Record 3]
+  ID:            11
+  Code:          F5069
+  Name:          女性50-69歳
+  Gender:        女性
+  Age Range:     50-69歳
+  Display Order: 3
+  Created:       2025-12-02 04:45:27.741926
+  Updated:       2025-12-02 06:52:33.351939
+
+[Record 4]
+  ID:            12
+  Code:          M2034
+  Name:          男性20-34歳
+  Gender:        男性
+  Age Range:     20-34歳
+  Display Order: 4
+  Created:       2025-12-02 04:45:27.827575
+  Updated:       2025-12-02 06:52:33.351939
+
+[Record 5]
+  ID:            13
+  Code:          M3549
+  Name:          男性35-49歳
+  Gender:        男性
+  Age Range:     35-49歳
+  Display Order: 5
+  Created:       2025-12-02 04:45:27.911513
+  Updated:       2025-12-02 06:52:33.351939
+
+[Record 6]
+  ID:            14
+  Code:          M5069
+  Name:          男性50-69歳
+  Gender:        男性
+  Age Range:     50-69歳
+  Display Order: 6
+  Created:       2025-12-02 04:45:27.995529
+  Updated:       2025-12-02 06:52:33.351939
+
+[Record 7]
+  ID:            15
+  Code:          M1219
+  Name:          男性12-19歳
+  Gender:        男性
+  Age Range:     12-19歳
+  Display Order: 1
+  Created:       2025-12-02 04:45:28.079964
+  Updated:       2025-12-02 06:52:34.132393
+
+[Record 8]
+  ID:            17
+  Code:          F1219
+  Name:          女性12-19歳
+  Gender:        女性
+  Age Range:     12-19歳
+  Display Order: 5
+  Created:       2025-12-02 06:52:34.132393
+  Updated:       2025-12-02 06:52:34.132393
+
+====================================================================================================
+6. VERIFICATION AGAINST CLAUDE.md SPECIFICATION
+====================================================================================================
+
+Expected Target Segments (from CLAUDE.md):
+----------------------------------------------------------------------------------------------------
+  1. 男性12-19              (Code: M1219)
+  2. 女性12-19              (Code: F1219)
+  3. 男性20-34              (Code: M2034)
+  4. 女性20-34              (Code: F2034)
+  5. 男性35-49              (Code: M3549)
+  6. 女性35-49              (Code: F3549)
+  7. 男性50-69              (Code: M5069)
+  8. 女性50-69              (Code: F5069)
+
+Actual Segments in Database:
+----------------------------------------------------------------------------------------------------
+  1. Expected: 男性12-19              | Code: M1219    | Actual: 男性12-19歳             | [OK]
+  2. Expected: 女性12-19              | Code: F1219    | Actual: 女性12-19歳             | [OK]
+  3. Expected: 男性20-34              | Code: M2034    | Actual: 男性20-34歳             | [OK]
+  4. Expected: 女性20-34              | Code: F2034    | Actual: 女性20-34歳             | [OK]
+  5. Expected: 男性35-49              | Code: M3549    | Actual: 男性35-49歳             | [OK]
+  6. Expected: 女性35-49              | Code: F3549    | Actual: 女性35-49歳             | [OK]
+  7. Expected: 男性50-69              | Code: M5069    | Actual: 男性50-69歳             | [OK]
+  8. Expected: 女性50-69              | Code: F5069    | Actual: 女性50-69歳             | [OK]
+
+====================================================================================================
+7. VR/TPR FILE NAMING PATTERN & MAPPING
+====================================================================================================
+
+File Pattern Analysis:
+Format: VR[タレント型]_[ターゲット層]_202507.csv
+----------------------------------------------------------------------------------------------------
+
+VR Files and Target Segment Mapping:
+  VR女性タレント_女性12～19_202507.csv                        -> 女性12-19              [Maps to ID 17]
+  VR女性タレント_女性20～34_202507.csv                        -> 女性20-34              [Maps to ID 9]
+  VR女性タレント_女性35～49_202507.csv                        -> 女性35-49              [Maps to ID 10]
+  VR女性タレント_女性50～69_202507.csv                        -> 女性50-69              [Maps to ID 11]
+  VR女性タレント_男性12～19_202507.csv                        -> 男性12-19              [Maps to ID 15]
+  VR女性タレント_男性20～34_202507.csv                        -> 男性20-34              [Maps to ID 12]
+  VR女性タレント_男性35～49_202507.csv                        -> 男性35-49              [Maps to ID 13]
+  VR女性タレント_男性50～69_202507.csv                        -> 男性50-69              [Maps to ID 14]
+  VR男性タレント_女性12～19_202507.csv                        -> 女性12-19              [Maps to ID 17]
+  VR男性タレント_女性20～34_202507.csv                        -> 女性20-34              [Maps to ID 9]
+  VR男性タレント_女性35～49_202507.csv                        -> 女性35-49              [Maps to ID 10]
+  VR男性タレント_女性50～69_202507.csv                        -> 女性50-69              [Maps to ID 11]
+  VR男性タレント_男性12～19_202507.csv                        -> 男性12-19              [Maps to ID 15]
+  VR男性タレント_男性20～34_202507.csv                        -> 男性20-34              [Maps to ID 12]
+  VR男性タレント_男性35～49_202507.csv                        -> 男性35-49              [Maps to ID 13]
+  VR男性タレント_男性50～69_202507.csv                        -> 男性50-69              [Maps to ID 14]
+
+====================================================================================================
+8. SEGMENT MAPPING VERIFICATION
+====================================================================================================
+
+Target Segment ID Mapping Table:
+----------------------------------------------------------------------------------------------------
+ID    Code     Name (JP)                 Gender     Age Range      
+----------------------------------------------------------------------------------------------------
+9     F2034    女性20-34歳                  女性         20-34歳         
+10    F3549    女性35-49歳                  女性         35-49歳         
+11    F5069    女性50-69歳                  女性         50-69歳         
+12    M2034    男性20-34歳                  男性         20-34歳         
+13    M3549    男性35-49歳                  男性         35-49歳         
+14    M5069    男性50-69歳                  男性         50-69歳         
+15    M1219    男性12-19歳                  男性         12-19歳         
+17    F1219    女性12-19歳                  女性         12-19歳         
+
+====================================================================================================
+9. ISSUES & NOTES
+====================================================================================================
+
+- ID sequence is not continuous (expected 1-8 or similar, found: 9, 10, 11, 12, 13, 14, 15, 17)
+
+- display_order has duplicates: [1, 5]
+
+- Database ID order does not match logical segment order (by code)
+
+====================================================================================================
+10. SUMMARY & RECOMMENDATIONS
+====================================================================================================
+
+Structure Summary:
+- Table: target_segments
+- Columns: 8 (id, code, name, gender, age_range, display_order, created_at, updated_at)
+- Records: 8 (all 8 required segments present)
+- Indexes: 4 (PRIMARY KEY, unique code index, two btree indexes)
+
+Data Content Summary:
+- All 8 required target segments are present
+- Unique codes: M1219, F1219, M2034, F2034, M3549, F3549, M5069, F5069
+- Japanese names properly formatted: [Gender][Age Range]歳
+
+Database Integration:
+- VR files: 16 files covering all gender/segment combinations
+- TPR data: Ready for integration (file naming includes target segment)
+- Mapping: Each VR/TPR file maps to a specific target_segment ID
+
+Recommendations:
+1. Consider reorganizing display_order values for logical ordering (1-8 consecutive)
+2. Verify ID sequence is intentional (gap at ID 16) or consolidate to 1-8
+3. Update display_order to match logical segment order for UI consistency
+4. Document the mapping between VR file naming patterns and target_segment IDs
+
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

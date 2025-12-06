@@ -1,0 +1,562 @@
+{
+  "investigation": {
+    "date": "2025-12-05",
+    "target_database": "Neon PostgreSQL (neondb)",
+    "status": "completed"
+  },
+  "table_structure": {
+    "name": "m_talent_cm",
+    "schema": "public",
+    "type": "master_data",
+    "purpose": "タレントのCM出演履歴管理",
+    "primary_key": ["account_id", "sub_id"],
+    "foreign_keys": [
+      {
+        "constraint": "fk_m_talent_cm_account",
+        "columns": ["account_id"],
+        "references": "m_account.account_id",
+        "on_delete": "NO ACTION",
+        "on_update": "NO ACTION"
+      }
+    ],
+    "columns": [
+      {
+        "ordinal": 1,
+        "name": "account_id",
+        "type": "INTEGER",
+        "nullable": false,
+        "is_pk": true,
+        "is_fk": true,
+        "description": "タレントID"
+      },
+      {
+        "ordinal": 2,
+        "name": "sub_id",
+        "type": "INTEGER",
+        "nullable": false,
+        "is_pk": true,
+        "description": "CM出演連番"
+      },
+      {
+        "ordinal": 3,
+        "name": "client_name",
+        "type": "VARCHAR",
+        "nullable": true,
+        "description": "クライアント/スポンサー名"
+      },
+      {
+        "ordinal": 4,
+        "name": "product_name",
+        "type": "VARCHAR",
+        "nullable": true,
+        "description": "商品/サービス名"
+      },
+      {
+        "ordinal": 5,
+        "name": "use_period_start",
+        "type": "VARCHAR",
+        "nullable": true,
+        "format": "YYYY-MM-DD",
+        "description": "放映開始日"
+      },
+      {
+        "ordinal": 6,
+        "name": "use_period_end",
+        "type": "VARCHAR",
+        "nullable": true,
+        "format": "YYYY-MM-DD",
+        "description": "放映終了日"
+      },
+      {
+        "ordinal": 7,
+        "name": "rival_category_type_cd1",
+        "type": "INTEGER",
+        "nullable": true,
+        "description": "競合カテゴリコード1"
+      },
+      {
+        "ordinal": 8,
+        "name": "rival_category_type_cd2",
+        "type": "INTEGER",
+        "nullable": true,
+        "description": "競合カテゴリコード2"
+      },
+      {
+        "ordinal": 9,
+        "name": "rival_category_type_cd3",
+        "type": "INTEGER",
+        "nullable": true,
+        "description": "競合カテゴリコード3"
+      },
+      {
+        "ordinal": 10,
+        "name": "rival_category_type_cd4",
+        "type": "INTEGER",
+        "nullable": true,
+        "description": "競合カテゴリコード4"
+      },
+      {
+        "ordinal": 11,
+        "name": "agency_name",
+        "type": "VARCHAR",
+        "nullable": true,
+        "description": "広告代理店名"
+      },
+      {
+        "ordinal": 12,
+        "name": "production_name",
+        "type": "VARCHAR",
+        "nullable": true,
+        "description": "制作会社名"
+      },
+      {
+        "ordinal": 13,
+        "name": "director",
+        "type": "VARCHAR",
+        "nullable": true,
+        "description": "監督/演出名"
+      },
+      {
+        "ordinal": 14,
+        "name": "note",
+        "type": "TEXT",
+        "nullable": true,
+        "description": "備考・契約状況"
+      },
+      {
+        "ordinal": 15,
+        "name": "regist_date",
+        "type": "TIMESTAMP",
+        "nullable": true,
+        "description": "登録日時"
+      }
+    ],
+    "total_columns": 15,
+    "indexes": [
+      {
+        "name": "m_talent_cm_pkey",
+        "type": "UNIQUE",
+        "columns": ["account_id", "sub_id"],
+        "method": "BTREE"
+      }
+    ]
+  },
+  "data_statistics": {
+    "total_records": 6687,
+    "unique_talents": 2421,
+    "average_cm_per_talent": 2.76,
+    "max_cm_per_talent": 26,
+    "top_talent": {
+      "account_id": 1165,
+      "name": "川口春奈",
+      "cm_count": 26
+    },
+    "data_quality": {
+      "client_name": {
+        "null_count": 0,
+        "null_percentage": 0.0,
+        "quality": "excellent"
+      },
+      "product_name": {
+        "null_count": 814,
+        "null_percentage": 12.2,
+        "quality": "good",
+        "note": "requires NULL handling"
+      },
+      "use_period_start": {
+        "null_count": 26,
+        "null_percentage": 0.4,
+        "quality": "excellent",
+        "format": "YYYY-MM-DD"
+      },
+      "use_period_end": {
+        "null_count": 56,
+        "null_percentage": 0.8,
+        "quality": "excellent",
+        "format": "YYYY-MM-DD"
+      },
+      "note": {
+        "null_count": 107,
+        "null_percentage": 1.6,
+        "quality": "excellent"
+      },
+      "agency_name": {
+        "null_count": 6643,
+        "null_percentage": 99.3,
+        "quality": "poor",
+        "note": "sparse data"
+      },
+      "production_name": {
+        "null_count": 6641,
+        "null_percentage": 99.3,
+        "quality": "poor",
+        "note": "sparse data"
+      },
+      "director": {
+        "null_count": 6655,
+        "null_percentage": 99.5,
+        "quality": "poor",
+        "note": "sparse data"
+      }
+    },
+    "unique_values": {
+      "client_count": 3330,
+      "product_count": 3809
+    },
+    "date_format": {
+      "format": "YYYY-MM-DD",
+      "compliance": "ISO 8601",
+      "all_records_compliant": true
+    }
+  },
+  "frontend_mapping": {
+    "frontend_type": "CMHistoryDetail",
+    "source_file": "frontend/src/types/index.ts",
+    "mappings": [
+      {
+        "frontend_field": "client_name",
+        "db_column": "client_name",
+        "status": "perfect_match",
+        "data_coverage": "100%"
+      },
+      {
+        "frontend_field": "product_name",
+        "db_column": "product_name",
+        "status": "requires_handling",
+        "data_coverage": "87.8%",
+        "issue": "12.2% NULL",
+        "recommendation": "convert NULL to empty string"
+      },
+      {
+        "frontend_field": "use_period_start",
+        "db_column": "use_period_start",
+        "status": "perfect_match",
+        "data_coverage": "99.6%"
+      },
+      {
+        "frontend_field": "use_period_end",
+        "db_column": "use_period_end",
+        "status": "perfect_match",
+        "data_coverage": "99.2%"
+      },
+      {
+        "frontend_field": "agency_name",
+        "db_column": "agency_name",
+        "status": "available",
+        "data_coverage": "0.7%",
+        "note": "sparse but available"
+      },
+      {
+        "frontend_field": "production_name",
+        "db_column": "production_name",
+        "status": "available",
+        "data_coverage": "0.7%",
+        "note": "sparse but available"
+      },
+      {
+        "frontend_field": "director",
+        "db_column": "director",
+        "status": "available",
+        "data_coverage": "0.5%",
+        "note": "sparse but available"
+      },
+      {
+        "frontend_field": "category",
+        "db_column": null,
+        "status": "missing",
+        "recommendation": "fetch from m_account.act_genre"
+      },
+      {
+        "frontend_field": "note",
+        "db_column": "note",
+        "status": "perfect_match",
+        "data_coverage": "98.4%"
+      }
+    ]
+  },
+  "current_model_issues": {
+    "sqlalchemy_model_file": "backend/app/models/__init__.py",
+    "class_name": "TalentCmHistory",
+    "issues": [
+      {
+        "severity": "critical",
+        "type": "table_name_mismatch",
+        "current": "talent_cm_history",
+        "expected": "m_talent_cm",
+        "impact": "model cannot query actual table"
+      },
+      {
+        "severity": "critical",
+        "type": "primary_key_mismatch",
+        "current": "id (single column, auto-increment)",
+        "expected": "account_id, sub_id (composite)",
+        "impact": "violates actual schema"
+      },
+      {
+        "severity": "high",
+        "type": "missing_columns",
+        "missing": ["agency_name", "production_name", "director"],
+        "impact": "incomplete data mapping"
+      },
+      {
+        "severity": "high",
+        "type": "wrong_data_type",
+        "columns": [
+          {
+            "column": "use_period_start",
+            "current": "Date",
+            "expected": "String",
+            "reason": "DB stores as VARCHAR(10)"
+          },
+          {
+            "column": "use_period_end",
+            "current": "Date",
+            "expected": "String",
+            "reason": "DB stores as VARCHAR(10)"
+          }
+        ]
+      },
+      {
+        "severity": "high",
+        "type": "no_relationship",
+        "description": "No relationship defined to Talent model",
+        "impact": "cannot eager load CM history"
+      }
+    ],
+    "total_issues": 5
+  },
+  "implementation_requirements": {
+    "phase1_model_definition": {
+      "priority": "HIGH",
+      "tasks": [
+        {
+          "task": "Create MTalentCM model class",
+          "subtasks": [
+            "Set __tablename__ = 'm_talent_cm'",
+            "Define composite primary key (account_id, sub_id)",
+            "Add all 15 columns with correct types",
+            "Add Foreign Key constraint to m_account",
+            "Define to_dict() method",
+            "Define get_rival_categories() method"
+          ]
+        },
+        {
+          "task": "Update Talent model",
+          "subtasks": [
+            "Add cm_history relationship",
+            "Configure cascade delete",
+            "Configure foreign_keys parameter"
+          ]
+        },
+        {
+          "task": "Remove or refactor TalentCmHistory",
+          "note": "current incorrect model"
+        }
+      ]
+    },
+    "phase2_api_implementation": {
+      "priority": "HIGH",
+      "tasks": [
+        {
+          "task": "Create talent detail endpoint",
+          "path": "GET /api/talents/{account_id}",
+          "response": "TalentDetailInfo with cm_history array"
+        },
+        {
+          "task": "Implement CM history query",
+          "subtasks": [
+            "Use joinedload for eager loading",
+            "Filter by account_id",
+            "Sort by sub_id",
+            "Handle NULL values"
+          ]
+        },
+        {
+          "task": "Add error handling",
+          "subtasks": [
+            "404 for talent not found",
+            "500 for database errors"
+          ]
+        }
+      ]
+    },
+    "phase3_frontend_integration": {
+      "priority": "MEDIUM",
+      "tasks": [
+        {
+          "task": "Update TalentDetailModal component",
+          "subtasks": [
+            "Replace mock data with API call",
+            "Add loading state",
+            "Add error handling"
+          ]
+        },
+        {
+          "task": "Verify CMHistoryDetail type",
+          "subtasks": [
+            "Confirm product_name nullable",
+            "Confirm optional fields"
+          ]
+        }
+      ]
+    },
+    "phase4_testing": {
+      "priority": "MEDIUM",
+      "tasks": [
+        {
+          "task": "Unit tests",
+          "subtasks": [
+            "Test MTalentCM.to_dict()",
+            "Test get_rival_categories()",
+            "Test NULL handling"
+          ]
+        },
+        {
+          "task": "Integration tests",
+          "subtasks": [
+            "Test API endpoint",
+            "Test database query",
+            "Test error responses"
+          ]
+        },
+        {
+          "task": "E2E tests",
+          "subtasks": [
+            "Test full CM history display flow",
+            "Test with 26-item dataset",
+            "Test performance"
+          ]
+        }
+      ]
+    }
+  },
+  "data_sample": {
+    "talent": {
+      "account_id": 1165,
+      "name_full_for_matching": "川口春奈",
+      "last_name_kana": "カワグチ",
+      "first_name_kana": "ハルナ",
+      "act_genre": "女優",
+      "company_name": "研音"
+    },
+    "cm_records_sample": [
+      {
+        "account_id": 1165,
+        "sub_id": 1,
+        "client_name": "アムタス",
+        "product_name": "めちゃコミック",
+        "use_period_start": "2020-12-25",
+        "use_period_end": "2025-12-24",
+        "rival_category_type_cd1": 15,
+        "rival_category_type_cd2": 18,
+        "agency_name": null,
+        "production_name": null,
+        "director": null,
+        "note": "【2025/1 契約あり確認】",
+        "regist_date": "2025-09-04T14:02:07"
+      },
+      {
+        "account_id": 1165,
+        "sub_id": 2,
+        "client_name": "ウイングアーク1st",
+        "product_name": "ウイングアーク",
+        "use_period_start": "2023-05-12",
+        "use_period_end": "2026-05-11",
+        "rival_category_type_cd1": 16,
+        "rival_category_type_cd2": null,
+        "agency_name": null,
+        "production_name": null,
+        "director": null,
+        "note": "【2025/5 契約あり確認】",
+        "regist_date": "2025-09-04T14:02:07"
+      }
+    ]
+  },
+  "critical_findings": [
+    {
+      "finding": "Database table exists and is well-populated",
+      "severity": "positive",
+      "impact": "6,687 records across 2,421 talents provide rich data"
+    },
+    {
+      "finding": "Product name has 12.2% NULL values",
+      "severity": "medium",
+      "recommendation": "Convert NULL to empty string in API response"
+    },
+    {
+      "finding": "Category field does not exist in m_talent_cm",
+      "severity": "medium",
+      "recommendation": "Fetch act_genre from m_account table"
+    },
+    {
+      "finding": "SQLAlchemy model has critical mismatches",
+      "severity": "critical",
+      "recommendation": "Complete rewrite of TalentCmHistory model"
+    },
+    {
+      "finding": "No relationship defined between Talent and CM history",
+      "severity": "high",
+      "recommendation": "Add cm_history relationship to Talent model"
+    },
+    {
+      "finding": "Sparse optional fields (agency, production, director)",
+      "severity": "low",
+      "recommendation": "Return only when populated; use conditional rendering on frontend"
+    }
+  ],
+  "performance_targets": {
+    "single_talent_cm_fetch": {
+      "description": "Retrieve 1 talent with CM history (avg 2.76 CMs)",
+      "target_ms": 50,
+      "unit": "milliseconds"
+    },
+    "multiple_talents_fetch": {
+      "description": "Retrieve 100 talents with CM histories",
+      "target_ms": 200,
+      "unit": "milliseconds"
+    },
+    "full_table_scan": {
+      "description": "Retrieve all 6,687 CM records",
+      "target_ms": 500,
+      "unit": "milliseconds"
+    }
+  },
+  "recommendations_priority_order": [
+    {
+      "rank": 1,
+      "task": "Fix SQLAlchemy MTalentCM model",
+      "effort": "2 hours",
+      "impact": "critical"
+    },
+    {
+      "rank": 2,
+      "task": "Add Talent.cm_history relationship",
+      "effort": "30 minutes",
+      "impact": "high"
+    },
+    {
+      "rank": 3,
+      "task": "Implement GET /api/talents/{account_id} endpoint",
+      "effort": "2 hours",
+      "impact": "high"
+    },
+    {
+      "rank": 4,
+      "task": "Update TalentDetailModal to use real API",
+      "effort": "1 hour",
+      "impact": "medium"
+    },
+    {
+      "rank": 5,
+      "task": "Add comprehensive tests",
+      "effort": "3 hours",
+      "impact": "medium"
+    },
+    {
+      "rank": 6,
+      "task": "Performance optimization (if needed)",
+      "effort": "variable",
+      "impact": "low"
+    }
+  ]
+}

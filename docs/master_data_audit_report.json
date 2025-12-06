@@ -1,0 +1,240 @@
+{
+  "audit_timestamp": "2025-12-02T16:10:35.259419",
+  "summary": {
+    "total_tables": 4,
+    "verified_tables": 4,
+    "need_verification": 0
+  },
+  "audits": [
+    {
+      "table": "industries",
+      "count": 20,
+      "source": "ユーザー提供（クライアント仕様）",
+      "status": "✅ 正式確認済み",
+      "need_verification": false,
+      "items": [
+        {
+          "id": 1,
+          "name": "食品"
+        },
+        {
+          "id": 2,
+          "name": "菓子・氷菓"
+        },
+        {
+          "id": 3,
+          "name": "乳製品"
+        },
+        {
+          "id": 4,
+          "name": "清涼飲料水"
+        },
+        {
+          "id": 5,
+          "name": "アルコール飲料"
+        },
+        {
+          "id": 6,
+          "name": "フードサービス"
+        },
+        {
+          "id": 7,
+          "name": "医薬品・医療・健康食品"
+        },
+        {
+          "id": 8,
+          "name": "化粧品・ヘアケア・オーラルケア"
+        },
+        {
+          "id": 9,
+          "name": "トイレタリー"
+        },
+        {
+          "id": 10,
+          "name": "自動車関連"
+        },
+        {
+          "id": 11,
+          "name": "家電"
+        },
+        {
+          "id": 12,
+          "name": "通信・IT"
+        },
+        {
+          "id": 13,
+          "name": "ゲーム・エンターテイメント・アプリ"
+        },
+        {
+          "id": 14,
+          "name": "流通・通販"
+        },
+        {
+          "id": 15,
+          "name": "ファッション"
+        },
+        {
+          "id": 16,
+          "name": "貴金属"
+        },
+        {
+          "id": 17,
+          "name": "金融・不動産"
+        },
+        {
+          "id": 18,
+          "name": "エネルギー・輸送・交通"
+        },
+        {
+          "id": 19,
+          "name": "教育・出版・公共団体"
+        },
+        {
+          "id": 20,
+          "name": "観光"
+        }
+      ]
+    },
+    {
+      "table": "target_segments",
+      "count": 8,
+      "source": "フォーム仕様 + VRファイル名対応",
+      "status": "✅ 修正済み（AI推測削除）",
+      "need_verification": false,
+      "items": [
+        {
+          "id": 9,
+          "name": "女性20-34歳",
+          "code": "F2034",
+          "age_range": "20-34歳"
+        },
+        {
+          "id": 15,
+          "name": "男性12-19歳",
+          "code": "M1219",
+          "age_range": "12-19歳"
+        },
+        {
+          "id": 10,
+          "name": "女性35-49歳",
+          "code": "F3549",
+          "age_range": "35-49歳"
+        },
+        {
+          "id": 11,
+          "name": "女性50-69歳",
+          "code": "F5069",
+          "age_range": "50-69歳"
+        },
+        {
+          "id": 12,
+          "name": "男性20-34歳",
+          "code": "M2034",
+          "age_range": "20-34歳"
+        },
+        {
+          "id": 17,
+          "name": "女性12-19歳",
+          "code": "F1219",
+          "age_range": "12-19歳"
+        },
+        {
+          "id": 13,
+          "name": "男性35-49歳",
+          "code": "M3549",
+          "age_range": "35-49歳"
+        },
+        {
+          "id": 14,
+          "name": "男性50-69歳",
+          "code": "M5069",
+          "age_range": "50-69歳"
+        }
+      ]
+    },
+    {
+      "table": "image_items",
+      "count": 7,
+      "source": "ユーザー確認済み（正しい7項目）",
+      "status": "✅ クライアント確認済み",
+      "need_verification": false,
+      "items": [
+        {
+          "id": 1,
+          "name": "おもしろい",
+          "code": "funny",
+          "description": "ユーモアや親しみやすさを感じさせる"
+        },
+        {
+          "id": 2,
+          "name": "清潔感がある",
+          "code": "clean",
+          "description": "清潔で爽やかな印象を与える"
+        },
+        {
+          "id": 3,
+          "name": "個性的",
+          "code": "unique",
+          "description": "独自性や個性が際立つ"
+        },
+        {
+          "id": 4,
+          "name": "信頼できる",
+          "code": "trustworthy",
+          "description": "信頼感や安心感を与える"
+        },
+        {
+          "id": 5,
+          "name": "可愛い",
+          "code": "cute",
+          "description": "愛らしく魅力的な印象"
+        },
+        {
+          "id": 6,
+          "name": "カッコいい",
+          "code": "cool",
+          "description": "洗練されたカッコよさを持つ"
+        },
+        {
+          "id": 7,
+          "name": "大人っぽい",
+          "code": "mature",
+          "description": "成熟した落ち着いた雰囲気"
+        }
+      ]
+    },
+    {
+      "table": "budget_ranges",
+      "count": 4,
+      "source": "ユーザー提供（正しい4区分）",
+      "status": "✅ 正式確認済み（修正完了）",
+      "need_verification": false,
+      "items": [
+        {
+          "id": 1,
+          "name": "1,000万円未満",
+          "min_amount": 0.0,
+          "max_amount": 9999999.0
+        },
+        {
+          "id": 2,
+          "name": "1,000万円～3,000万円未満",
+          "min_amount": 10000000.0,
+          "max_amount": 29999999.0
+        },
+        {
+          "id": 3,
+          "name": "3,000万円～1億円未満",
+          "min_amount": 30000000.0,
+          "max_amount": 99999999.0
+        },
+        {
+          "id": 4,
+          "name": "1億円以上",
+          "min_amount": 100000000.0,
+          "max_amount": 999999999.0
+        }
+      ]
+    }
+  ]
+}

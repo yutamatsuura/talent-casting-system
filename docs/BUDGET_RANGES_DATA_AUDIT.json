@@ -1,0 +1,241 @@
+{
+  "audit_date": "2025-12-03T00:00:00Z",
+  "database": "PostgreSQL (Neon)",
+  "schema": {
+    "table_name": "budget_ranges",
+    "columns": [
+      {
+        "ordinal_position": 1,
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": false,
+        "default": "nextval('budget_ranges_id_seq'::regclass)",
+        "constraint_type": "PRIMARY KEY"
+      },
+      {
+        "ordinal_position": 2,
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": true,
+        "default": null,
+        "constraint_type": null
+      },
+      {
+        "ordinal_position": 3,
+        "column_name": "min_amount",
+        "data_type": "numeric",
+        "is_nullable": true,
+        "default": null,
+        "constraint_type": null
+      },
+      {
+        "ordinal_position": 4,
+        "column_name": "max_amount",
+        "data_type": "numeric",
+        "is_nullable": true,
+        "default": null,
+        "constraint_type": null
+      },
+      {
+        "ordinal_position": 5,
+        "column_name": "display_order",
+        "data_type": "integer",
+        "is_nullable": true,
+        "default": null,
+        "constraint_type": null
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "budget_ranges_pkey",
+        "indextype": "PRIMARY KEY",
+        "indexdef": "CREATE UNIQUE INDEX budget_ranges_pkey ON public.budget_ranges USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "budget_ranges_pkey",
+        "constraint_type": "PRIMARY KEY",
+        "column_name": "id"
+      }
+    ]
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "1,000万円未満",
+      "min_amount": 0,
+      "max_amount": 999,
+      "display_order": 1,
+      "status": "OK",
+      "note": "表示順序1（最初）"
+    },
+    {
+      "id": 2,
+      "name": "1,000万円～3,000万円未満",
+      "min_amount": 1000,
+      "max_amount": 2999,
+      "display_order": 2,
+      "status": "PROBLEM",
+      "note": "CLAUDE.mdテスト対象。金額が1/10000倍（期待値: 10000000-29999999）"
+    },
+    {
+      "id": 3,
+      "name": "3,000万円～1億円未満",
+      "min_amount": 3000,
+      "max_amount": 9999,
+      "display_order": 3,
+      "status": "PROBLEM",
+      "note": "金額が1/10000倍（期待値: 30000000-99999999）"
+    },
+    {
+      "id": 4,
+      "name": "1億円以上",
+      "min_amount": 10000,
+      "max_amount": null,
+      "display_order": 4,
+      "status": "PROBLEM",
+      "note": "金額が1/10000倍（期待値: 100000000-null）"
+    }
+  ],
+  "record_count": 4,
+  "verification": {
+    "names_match_specification": true,
+    "amounts_correct_unit": false,
+    "all_display_orders_sequential": true,
+    "has_duplicates": false,
+    "has_gaps": false
+  },
+  "related_data": {
+    "talents_table": {
+      "total_count": 4819,
+      "with_money_max_one_year_non_null": 0,
+      "with_money_max_one_year_null": 4819,
+      "min_money_max_one_year": null,
+      "max_money_max_one_year": null,
+      "status": "CRITICAL_ISSUE"
+    },
+    "matching_by_budget_range": [
+      {
+        "budget_range_id": 1,
+        "budget_range_name": "1,000万円未満",
+        "max_amount": 999,
+        "talents_count": 0,
+        "status": "NO_DATA"
+      },
+      {
+        "budget_range_id": 2,
+        "budget_range_name": "1,000万円～3,000万円未満",
+        "max_amount": 2999,
+        "talents_count": 0,
+        "status": "NO_DATA"
+      },
+      {
+        "budget_range_id": 3,
+        "budget_range_name": "3,000万円～1億円未満",
+        "max_amount": 9999,
+        "talents_count": 0,
+        "status": "NO_DATA"
+      },
+      {
+        "budget_range_id": 4,
+        "budget_range_name": "1億円以上",
+        "max_amount": null,
+        "talents_count": 0,
+        "status": "NO_DATA"
+      }
+    ]
+  },
+  "api_implementation": {
+    "endpoint": "/api/budget-ranges",
+    "method": "GET",
+    "status": "NOT_IMPLEMENTED",
+    "required_response_format": {
+      "success": true,
+      "data": [
+        {
+          "id": 1,
+          "name": "1,000万円未満",
+          "min_amount": 0,
+          "max_amount": 999,
+          "display_order": 1
+        }
+      ]
+    }
+  },
+  "issues": [
+    {
+      "severity": "CRITICAL",
+      "id": "BUDGET_AMOUNT_UNIT_MISMATCH",
+      "title": "予算金額の単位が1/10000倍",
+      "description": "budget_rangesテーブルの min_amount, max_amount が期待値より10000倍小さい",
+      "current_value": "min_amount=1000, max_amount=2999 (レコード#2)",
+      "expected_value": "min_amount=10000000, max_amount=29999999",
+      "impact": "STEP 0フィルタリングで talentsテーブルのmoney_max_one_yearと比較不可",
+      "fix_priority": 1,
+      "fix_method": "insert_budget_ranges.py の budget_data を修正して再実行"
+    },
+    {
+      "severity": "CRITICAL",
+      "id": "TALENTS_MONEY_NULL",
+      "title": "talentsテーブルの money_max_one_year が全件NULL",
+      "description": "4819人すべてのタレントのmoney_max_one_yearがNULL設定",
+      "current_count": 0,
+      "expected_count": "> 0",
+      "impact": "STEP 0フィルタリング実行不可（0件になる）",
+      "fix_priority": 1,
+      "fix_method": "VRデータ/TPRデータのインポートを確認し、金額を設定"
+    },
+    {
+      "severity": "CRITICAL",
+      "id": "API_ENDPOINT_NOT_IMPLEMENTED",
+      "title": "APIエンドポイント /api/budget-ranges が未実装",
+      "description": "FastAPIで budget_ranges.py エンドポイントが実装されていない",
+      "current_status": "NOT_IMPLEMENTED",
+      "expected_status": "IMPLEMENTED",
+      "impact": "フロント画面で予算区分を選択できない",
+      "fix_priority": 2,
+      "fix_method": "backend/app/api/endpoints/budget_ranges.py を新規作成"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": 1,
+      "action": "修正 budget_ranges の金額",
+      "steps": [
+        "insert_budget_ranges.py を開く",
+        "budget_data の値を修正（1000 → 10000000等）",
+        "DELETE FROM budget_ranges; で既存データを削除",
+        "python3 insert_budget_ranges.py を実行",
+        "SELECT * FROM budget_ranges ORDER BY display_order; で確認"
+      ]
+    },
+    {
+      "priority": 1,
+      "action": "talentsテーブルの money_max_one_year を設定",
+      "steps": [
+        "VRデータ/TPRデータのインポート状況を確認",
+        "UPDATE talents SET money_max_one_year = ... WHERE ... を実行",
+        "SELECT COUNT(*) FROM talents WHERE money_max_one_year > 0; で確認"
+      ]
+    },
+    {
+      "priority": 2,
+      "action": "FastAPI エンドポイント実装",
+      "steps": [
+        "backend/app/api/endpoints/budget_ranges.py を新規作成",
+        "GET /api/budget-ranges エンドポイントを実装",
+        "app/main.py に include_router を追加",
+        "curl http://localhost:8432/api/budget-ranges で動作確認"
+      ]
+    },
+    {
+      "priority": 3,
+      "action": "インデックス追加",
+      "steps": [
+        "CREATE INDEX idx_budget_ranges_display_order ON budget_ranges(display_order);",
+        "CREATE INDEX idx_budget_ranges_min_max ON budget_ranges(min_amount, max_amount);"
+      ]
+    }
+  ]
+}

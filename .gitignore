@@ -4,6 +4,14 @@
 .env.production
 .env.staging
 .env*.local
+*.env
+
+# Google Cloud Platform credentials - SECURITY CRITICAL
+gcp-key.json
+service-account-key.json
+credentials.json
+*-key.json
+google-credentials.json
 
 # Dependencies
 node_modules/
@@ -68,3 +76,6 @@ ENV/
 # Logs
 logs
 *.log
+
+# Deploy scripts (contains sensitive info)
+scripts/deploy-*.sh

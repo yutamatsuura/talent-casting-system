@@ -1,0 +1,525 @@
+{
+  "connection_status": {
+    "status": "✅",
+    "database_name": "neondb",
+    "connection_time_ms": "1097.71",
+    "error": "なし"
+  },
+  "tables": {
+    "talents": {
+      "exists": false
+    },
+    "talent_scores": {
+      "exists": true,
+      "columns": 10,
+      "column_details": [
+        {
+          "name": "account_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "target_segment_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "vr_popularity",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "tpr_power_score",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "base_power_score",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "talent_name_original",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "talent_name_cleaned",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "data_source",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "record_count": 32032,
+      "primary_keys": [
+        "account_id",
+        "target_segment_id"
+      ],
+      "foreign_keys": [
+        {
+          "column": "account_id",
+          "references": "m_account.account_id"
+        },
+        {
+          "column": "target_segment_id",
+          "references": "target_segments.target_segment_id"
+        }
+      ]
+    },
+    "talent_images": {
+      "exists": true,
+      "columns": 11,
+      "column_details": [
+        {
+          "name": "account_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "target_segment_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "image_funny",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "image_clean",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "image_unique",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "image_trustworthy",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "image_cute",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "image_cool",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "image_mature",
+          "type": "numeric",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "record_count": 8000,
+      "primary_keys": [
+        "account_id",
+        "target_segment_id"
+      ],
+      "foreign_keys": [
+        {
+          "column": "account_id",
+          "references": "m_account.account_id"
+        },
+        {
+          "column": "target_segment_id",
+          "references": "target_segments.target_segment_id"
+        }
+      ]
+    },
+    "industries": {
+      "exists": true,
+      "columns": 5,
+      "column_details": [
+        {
+          "name": "industry_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "industry_name",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "required_image_id",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "record_count": 20,
+      "primary_keys": [
+        "industry_id"
+      ]
+    },
+    "target_segments": {
+      "exists": true,
+      "columns": 7,
+      "column_details": [
+        {
+          "name": "target_segment_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "segment_name",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "gender",
+          "type": "character varying",
+          "nullable": "YES"
+        },
+        {
+          "name": "age_min",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "age_max",
+          "type": "integer",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "record_count": 8,
+      "primary_keys": [
+        "target_segment_id"
+      ]
+    },
+    "budget_ranges": {
+      "exists": true,
+      "columns": 6,
+      "column_details": [
+        {
+          "name": "budget_range_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "range_name",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "min_amount",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "max_amount",
+          "type": "bigint",
+          "nullable": "YES"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "record_count": 4,
+      "primary_keys": [
+        "budget_range_id"
+      ]
+    },
+    "image_items": {
+      "exists": true,
+      "columns": 4,
+      "column_details": [
+        {
+          "name": "image_id",
+          "type": "integer",
+          "nullable": "NO"
+        },
+        {
+          "name": "image_name",
+          "type": "character varying",
+          "nullable": "NO"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": "YES"
+        }
+      ],
+      "record_count": 7,
+      "primary_keys": [
+        "image_id"
+      ]
+    },
+    "industry_images": {
+      "exists": false
+    }
+  },
+  "data_structure_issues": [
+    "⚠️ テーブル 'talents' が存在しません",
+    "⚠️ テーブル 'industry_images' が存在しません"
+  ],
+  "recommended_actions": [
+    "1. 不足テーブルの作成: talents, industry_images",
+    "2. talentsテーブルのデータが少ない可能性があります（期待値: 約2,000件）"
+  ],
+  "samples": {
+    "talent_scores": [
+      {
+        "account_id": "482",
+        "target_segment_id": "9",
+        "vr_popularity": "43.20",
+        "tpr_power_score": "30.30",
+        "base_power_score": "43.20",
+        "talent_name_original": "ＨＩＫＡＫＩＮ",
+        "talent_name_cleaned": "HIKAKIN",
+        "data_source": "VR_FILE_1",
+        "created_at": "2025-12-02 19:24:33.484929",
+        "updated_at": "2025-12-03 09:44:43.749914"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "9",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "10",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "11",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "12",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "13",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "14",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "15",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "13",
+        "target_segment_id": "16",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      },
+      {
+        "account_id": "17",
+        "target_segment_id": "9",
+        "vr_popularity": "0.00",
+        "tpr_power_score": "0.00",
+        "base_power_score": "0.00",
+        "talent_name_original": "",
+        "talent_name_cleaned": "",
+        "data_source": "ZERO_INIT",
+        "created_at": "2025-12-03 07:39:09.031385",
+        "updated_at": "2025-12-03 07:39:09.031385"
+      }
+    ],
+    "talent_images": [
+      {
+        "account_id": "729",
+        "target_segment_id": "9",
+        "image_funny": "54.20",
+        "image_clean": "3.10",
+        "image_unique": "10.60",
+        "image_trustworthy": "19.40",
+        "image_cute": "1.80",
+        "image_cool": "5.70",
+        "image_mature": "7.00",
+        "created_at": "2025-12-02 19:24:33.484929",
+        "updated_at": "2025-12-02 19:24:33.484929"
+      },
+      {
+        "account_id": "1162",
+        "target_segment_id": "9",
+        "image_funny": "4.00",
+        "image_clean": "17.60",
+        "image_unique": "9.30",
+        "image_trustworthy": "23.80",
+        "image_cute": "5.30",
+        "image_cool": "41.40",
+        "image_mature": "12.80",
+        "created_at": "2025-12-02 19:24:33.484929",
+        "updated_at": "2025-12-02 19:24:33.484929"
+      },
+      {
+        "account_id": "2642",
+        "target_segment_id": "9",
+        "image_funny": "52.90",
+        "image_clean": "3.10",
+        "image_unique": "16.30",
+        "image_trustworthy": "7.00",
+        "image_cute": "1.30",
+        "image_cool": "4.00",
+        "image_mature": "3.50",
+        "created_at": "2025-12-02 19:24:33.484929",
+        "updated_at": "2025-12-02 19:24:33.484929"
+      },
+      {
+        "account_id": "1339",
+        "target_segment_id": "9",
+        "image_funny": "56.40",
+        "image_clean": "0.90",
+        "image_unique": "20.30",
+        "image_trustworthy": "9.70",
+        "image_cute": "7.00",
+        "image_cool": "6.20",
+        "image_mature": "3.10",
+        "created_at": "2025-12-02 19:24:33.484929",
+        "updated_at": "2025-12-02 19:24:33.484929"
+      },
+      {
+        "account_id": "1783",
+        "target_segment_id": "9",
+        "image_funny": "52.40",
+        "image_clean": "2.20",
+        "image_unique": "15.90",
+        "image_trustworthy": "6.20",
+        "image_cute": "0.40",
+        "image_cool": "4.80",
+        "image_mature": "5.30",
+        "created_at": "2025-12-02 19:24:33.484929",
+        "updated_at": "2025-12-02 19:24:33.484929"
+      }
+    ]
+  },
+  "unexpected_tables": [
+    "m_talent_staff",
+    "m_talent_movie",
+    "m_talent_deal",
+    "m_talent_other",
+    "m_talent_frequent_keyword",
+    "m_talent_media",
+    "m_talent_act",
+    "m_account",
+    "m_talent_cm",
+    "m_talent_deal_result"
+  ],
+  "integrity_check_error": "column \"id\" does not exist\nLINE 2:                     SELECT MIN(id) as min_id, MAX(id) as max...\n                                       ^\n"
+}

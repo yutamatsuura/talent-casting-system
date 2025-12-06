@@ -280,3 +280,31 @@ API通信:
 ```
 
 **重要**: このプロジェクトは「必要最小限の実装のみ」の原則に従い、「あったらいいな」機能は一切追加しない。
+
+## デプロイ設定（本番環境）
+```yaml
+デプロイ日: 2025-12-06
+構成: A (お試しデプロイ - 開発DBをそのまま使用)
+技術選択: Vercel + Cloud Run + --set-env-vars方式
+
+本番環境URL:
+  フロントエンド: https://talent-casting-diagnosis-36gjbuhab-yutamatsuuras-projects.vercel.app
+  バックエンド: https://talent-casting-backend-392592761218.asia-northeast1.run.app
+  API Docs: https://talent-casting-backend-392592761218.asia-northeast1.run.app/api/docs
+  Health Check: https://talent-casting-backend-392592761218.asia-northeast1.run.app/api/health
+
+データベース: Neon PostgreSQL (開発環境と同じインスタンス)
+環境変数管理: --set-env-vars (完全無料設定)
+認証状態:
+  - Vercel: ユーザー yutamatsuura
+  - Google Cloud: プロジェクト talent-casting-1764281842, リージョン asia-northeast1
+
+デプロイスクリプト: scripts/deploy-production.sh (.gitignore済み)
+検証結果: Playwright自動テスト 4/4 Pass, API疎通確認済み
+```
+
+## 注意事項
+- フロントエンドはVercelのパスワード保護を解除する必要があります
+  (Vercel Dashboard → Settings → General → Password Protection → Disabled)
+- 構成Aのため開発環境と本番環境で同じデータベースを使用しています
+- 将来的な本番専用データベース切り替えも可能です
