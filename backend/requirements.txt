@@ -1,0 +1,35 @@
+# タレントキャスティングシステム - バックエンド依存関係
+# 生成日: 2025-11-28
+# Python 3.11+対応
+
+# FastAPI フレームワーク
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# データベース
+asyncpg==0.30.0
+sqlalchemy==2.0.36
+
+# データバリデーション
+pydantic==2.10.6
+pydantic-settings==2.7.1
+
+# CORS対応
+python-multipart==0.0.6
+
+# 環境変数管理
+python-dotenv==1.0.0
+
+# 型ヒント最適化
+typing-extensions>=4.12.2
+
+# データ処理
+pandas==2.2.3
+openpyxl==3.1.5
+
+# 開発・テスト用ツール
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.0.0
+httpx==0.26.0
+coverage==7.3.4

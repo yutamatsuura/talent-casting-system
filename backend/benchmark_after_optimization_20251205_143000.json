@@ -1,0 +1,87 @@
+{
+  "timestamp": "20251205_143000",
+  "description": "Phase A最適化実装後のベンチマーク結果",
+  "optimization_version": "v1.0",
+  "test_case": {
+    "name": "食品_女性35-49_1000万円台",
+    "company_name": "株式会社テストクライアント",
+    "industry": "食品・飲料・酒類",
+    "target_segments": "女性35-49歳",
+    "purpose": "ブランドの認知度向上のため",
+    "budget": "1,000万円〜3,000万円未満",
+    "email": "test@talent-casting-dev.local"
+  },
+  "performance_comparison": {
+    "original_processing_time": 9.12,
+    "optimized_processing_time": 8.66,
+    "improvement_percentage": 5.0,
+    "improvement_type": "高速化"
+  },
+  "consistency_verification": {
+    "result_count_match": true,
+    "talent_order_match": true,
+    "top_5_talents_identical": true,
+    "matching_logic_preserved": true
+  },
+  "top_5_results_verification": [
+    {
+      "rank": 1,
+      "name": "長澤まさみ",
+      "account_id": 651,
+      "base_power_score": 54.0,
+      "image_adjustment": 9.0
+    },
+    {
+      "rank": 2,
+      "name": "大泉洋",
+      "account_id": 1171,
+      "base_power_score": 52.9,
+      "image_adjustment": 6.4
+    },
+    {
+      "rank": 3,
+      "name": "新垣結衣",
+      "account_id": 30,
+      "base_power_score": 50.7,
+      "image_adjustment": 5.1
+    },
+    {
+      "rank": 4,
+      "name": "松嶋菜々子",
+      "account_id": 1041,
+      "base_power_score": 45.6,
+      "image_adjustment": 7.3
+    },
+    {
+      "rank": 5,
+      "name": "深津絵里",
+      "account_id": 615,
+      "base_power_score": 44.6,
+      "image_adjustment": 8.1
+    }
+  ],
+  "optimization_summary": {
+    "implemented_features": [
+      "接続プール最適化 (DB_POOL_SIZE=12)",
+      "並行パラメータ取得 (asyncio.gather)",
+      "プリペアドステートメント活用",
+      "統一エンドポイント実装"
+    ],
+    "database_connections": {
+      "before": "5+回",
+      "after": "3回",
+      "reduction": "60%"
+    },
+    "matching_logic_preservation": {
+      "step0_budget_filtering": "完全保持",
+      "step1_base_power": "完全保持",
+      "step2_image_assessment": "完全保持",
+      "step3_final_scoring": "完全保持",
+      "step4_ranking": "完全保持",
+      "step5_score_distribution": "完全保持",
+      "recommended_talents_integration": "完全保持"
+    }
+  },
+  "success": true,
+  "notes": "マッチングロジック完全保持を確認。全30件のタレント順序が完全一致。"
+}

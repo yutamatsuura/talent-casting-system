@@ -1,25 +1,41 @@
 """SQLAlchemyモデル定義（単一真実源の原則）"""
-from sqlalchemy import Column, Integer, String, ForeignKey, Index, DateTime, Numeric, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, Index, DateTime, Numeric, Date, Boolean, Text, BigInteger
 from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+import uuid
 
 Base = declarative_base()
 
 
 class Industry(Base):
-    """業種マスタテーブル（CLAUDE.md + requirements.md準拠）"""
+    """業種マスタテーブル（実際のDB構造に準拠）"""
     __tablename__ = "industries"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False, unique=True)
-    display_order = Column(Integer, default=0)
+    industry_id = Column("industry_id", Integer, primary_key=True, autoincrement=True)
+    industry_name = Column("industry_name", String(255), nullable=False)
+    required_image_id = Column("required_image_id", Integer, nullable=True)
+    created_at = Column("created_at", DateTime, nullable=True)
+    updated_at = Column("updated_at", DateTime, nullable=True)
+
+    # 互換性のためのプロパティ
+    @property
+    def id(self):
+        return self.industry_id
+
+    @property
+    def name(self):
+        return self.industry_name
+
+    @property
+    def display_order(self):
+        return self.industry_id  # industry_idを順序として使用
 
     # リレーション
-    industry_images = relationship("IndustryImage", back_populates="industry")
+    industry_images = relationship("IndustryImage", back_populates="industry", foreign_keys="IndustryImage.industry_id")
 
     def __repr__(self):
-        return f"<Industry(id={self.id}, name='{self.name}')>"
+        return f"<Industry(industry_id={self.industry_id}, industry_name='{self.industry_name}')>"
 
 
 class ImageItem(Base):
@@ -44,7 +60,7 @@ class IndustryImage(Base):
     __tablename__ = "industry_images"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    industry_id = Column(Integer, ForeignKey("industries.id", ondelete="CASCADE"), nullable=False)
+    industry_id = Column(Integer, ForeignKey("industries.industry_id", ondelete="CASCADE"), nullable=False)
     image_item_id = Column(Integer, ForeignKey("image_items.id", ondelete="CASCADE"), nullable=False)
 
     # リレーション
@@ -129,6 +145,7 @@ class Talent(Base):
     talent_scores = relationship("TalentScore", back_populates="talent", cascade="all, delete-orphan", foreign_keys="TalentScore.account_id")
     talent_images = relationship("TalentImage", back_populates="talent", cascade="all, delete-orphan", foreign_keys="TalentImage.account_id")
     talent_act = relationship("TalentAct", back_populates="account", uselist=False)
+    cm_history = relationship("MTalentCm", back_populates="talent", cascade="all, delete-orphan", foreign_keys="MTalentCm.account_id")
 
     # インデックス
     __table_args__ = (
@@ -222,36 +239,131 @@ class TalentImage(Base):
         return f"<TalentImage(account_id={self.account_id}, image_item_id={self.image_item_id})>"
 
 
-class TalentCmHistory(Base):
-    """CM出演履歴テーブル"""
-    __tablename__ = "talent_cm_history"
+class MTalentCm(Base):
+    """CM出演履歴テーブル（実際のm_talent_cmテーブルと対応）"""
+    __tablename__ = "m_talent_cm"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    account_id = Column(Integer, ForeignKey("m_account.account_id", ondelete="CASCADE"), nullable=False)
-    sub_id = Column(Integer, nullable=False)
-    client_name = Column(String(255), nullable=True)
-    product_name = Column(String(255), nullable=True)
-    use_period_start = Column(Date, nullable=True)
-    use_period_end = Column(Date, nullable=True)
-    rival_category_type_cd1 = Column(Integer, nullable=True)
-    rival_category_type_cd2 = Column(Integer, nullable=True)
-    rival_category_type_cd3 = Column(Integer, nullable=True)
-    rival_category_type_cd4 = Column(Integer, nullable=True)
-    note = Column(String, nullable=True)
-    regist_date = Column(DateTime, nullable=True)
-    up_date = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    # 複合主キー（実際のDB構造に合わせる）
+    account_id = Column(Integer, ForeignKey("m_account.account_id", ondelete="CASCADE"), primary_key=True)
+    sub_id = Column(Integer, primary_key=True)
+
+    # CM基本情報
+    client_name = Column(String, nullable=True, comment="クライアント/スポンサー名")
+    product_name = Column(String, nullable=True, comment="商品/サービス名（12%がNULL）")
+    use_period_start = Column(String, nullable=True, comment="放映開始日 (YYYY-MM-DD形式)")
+    use_period_end = Column(String, nullable=True, comment="放映終了日 (YYYY-MM-DD形式)")
+
+    # 競合カテゴリコード
+    rival_category_type_cd1 = Column(Integer, nullable=True, comment="競合カテゴリコード1")
+    rival_category_type_cd2 = Column(Integer, nullable=True, comment="競合カテゴリコード2")
+    rival_category_type_cd3 = Column(Integer, nullable=True, comment="競合カテゴリコード3")
+    rival_category_type_cd4 = Column(Integer, nullable=True, comment="競合カテゴリコード4")
+
+    # 制作関連情報（稀少データ）
+    agency_name = Column(String, nullable=True, comment="代理店名（0.7%のみ有値）")
+    production_name = Column(String, nullable=True, comment="制作会社名（0.7%のみ有値）")
+    director = Column(String, nullable=True, comment="監督/演出名（0.5%のみ有値）")
+
+    # その他
+    note = Column(Text, nullable=True, comment="備考・契約状況等（98.4%有値）")
+    regist_date = Column(DateTime, nullable=True, comment="登録日時")
 
     # リレーション
-    talent = relationship("Talent")
+    talent = relationship("Talent", back_populates="cm_history")
 
     # インデックス
     __table_args__ = (
-        Index("idx_cm_account_id", "account_id"),
-        Index("idx_cm_client", "client_name"),
-        Index("idx_cm_period", "use_period_start", "use_period_end"),
+        Index("idx_m_talent_cm_account", "account_id"),
+        Index("idx_m_talent_cm_client", "client_name"),
+        Index("idx_m_talent_cm_period", "use_period_start", "use_period_end"),
     )
 
     def __repr__(self):
         return f"<TalentCmHistory(account_id={self.account_id}, client_name='{self.client_name}')>"
+
+
+class FormSubmission(Base):
+    """フォーム送信履歴テーブル"""
+    __tablename__ = "form_submissions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(100), nullable=False, unique=True, index=True)
+    industry = Column(String(100), nullable=False)
+    target_segment = Column(String(50), nullable=False)
+    purpose = Column(String(255), nullable=True)  # 起用目的
+    budget_range = Column(String(100), nullable=False)
+    company_name = Column(String(255), nullable=True)
+    contact_name = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    genre_preference = Column(String(50), nullable=True)  # "はい"/"いいえ"
+    preferred_genres = Column(Text, nullable=True)  # JSON文字列として複数ジャンルを保存
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    # リレーション
+    button_clicks = relationship("ButtonClick", back_populates="form_submission", cascade="all, delete-orphan")
+
+    # インデックス
+    __table_args__ = (
+        Index("idx_form_submissions_created_at", "created_at"),
+        Index("idx_form_submissions_session", "session_id"),
+        Index("idx_form_submissions_industry", "industry"),
+    )
+
+    def __repr__(self):
+        return f"<FormSubmission(id={self.id}, session_id='{self.session_id}', company_name='{self.company_name}')>"
+
+
+class ButtonClick(Base):
+    """ボタンクリック追跡テーブル"""
+    __tablename__ = "button_clicks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    form_submission_id = Column(Integer, ForeignKey("form_submissions.id", ondelete="CASCADE"), nullable=False)
+    button_type = Column(String(50), nullable=False)  # 'counseling_booking', 'download', etc.
+    button_text = Column(String(255), nullable=True)
+    clicked_at = Column(DateTime, server_default=func.now(), nullable=False)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+
+    # リレーション
+    form_submission = relationship("FormSubmission", back_populates="button_clicks")
+
+    # インデックス
+    __table_args__ = (
+        Index("idx_button_clicks_submission", "form_submission_id"),
+        Index("idx_button_clicks_type", "button_type"),
+        Index("idx_button_clicks_clicked_at", "clicked_at"),
+    )
+
+    def __repr__(self):
+        return f"<ButtonClick(id={self.id}, form_submission_id={self.form_submission_id}, button_type='{self.button_type}')>"
+
+
+class RecommendedTalent(Base):
+    """おすすめタレント設定テーブル（業界別）"""
+    __tablename__ = "recommended_talents"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    industry_name = Column(String(100), ForeignKey("industries.industry_name"), nullable=False)
+    talent_id_1 = Column(Integer, ForeignKey("m_account.account_id"), nullable=True)  # 1番目のおすすめタレント
+    talent_id_2 = Column(Integer, ForeignKey("m_account.account_id"), nullable=True)  # 2番目のおすすめタレント
+    talent_id_3 = Column(Integer, ForeignKey("m_account.account_id"), nullable=True)  # 3番目のおすすめタレント
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # リレーション
+    industry = relationship("Industry")
+    talent_1 = relationship("Talent", foreign_keys=[talent_id_1])
+    talent_2 = relationship("Talent", foreign_keys=[talent_id_2])
+    talent_3 = relationship("Talent", foreign_keys=[talent_id_3])
+
+    # インデックス
+    __table_args__ = (
+        Index("idx_recommended_talents_industry", "industry_name", unique=True),
+    )
+
+    def __repr__(self):
+        return f"<RecommendedTalent(industry_name='{self.industry_name}', talent_ids=[{self.talent_id_1}, {self.talent_id_2}, {self.talent_id_3}])>"

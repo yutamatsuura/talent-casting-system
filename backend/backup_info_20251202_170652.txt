@@ -1,0 +1,5 @@
+Database Backup Info - 20251202_170652
+==================================================
+talents: 4,810 records
+talent_scores: 6,118 records
+talent_images: 2,688 records

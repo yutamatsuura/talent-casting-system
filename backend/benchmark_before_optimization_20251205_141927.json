@@ -1,0 +1,50 @@
+{
+  "timestamp": "20251205_141927",
+  "description": "Phase A最適化実装前のベンチマーク結果",
+  "test_cases": [
+    {
+      "test_case": {
+        "name": "化粧品_女性20-34_5000万円",
+        "company_name": "株式会社テストクライアント",
+        "industry": "化粧品・ヘアケア・オーラルケア",
+        "target_segments": "女性20-34歳",
+        "purpose": "商品サービスの特長訴求のため",
+        "budget": "3,000万円〜5,000万円未満",
+        "email": "test@talent-casting-dev.local"
+      },
+      "error": "500: マッチング処理中にエラーが発生しました: 'MockRequest' object has no attribute 'headers'",
+      "processing_time": null
+    },
+    {
+      "test_case": {
+        "name": "医薬品_男性20-34_1億円以上",
+        "company_name": "株式会社テストクライアント",
+        "industry": "医薬品・医療・健康食品",
+        "target_segments": "男性20-34歳",
+        "purpose": "商品サービスの特長訴求のため",
+        "budget": "1億円以上",
+        "email": "test@talent-casting-dev.local"
+      },
+      "error": "500: マッチング処理中にエラーが発生しました: 'MockRequest' object has no attribute 'headers'",
+      "processing_time": null
+    },
+    {
+      "test_case": {
+        "name": "食品_女性35-49_1000万円台",
+        "company_name": "株式会社テストクライアント",
+        "industry": "食品・飲料・酒類",
+        "target_segments": "女性35-49歳",
+        "purpose": "ブランドの認知度向上のため",
+        "budget": "1,000万円〜3,000万円未満",
+        "email": "test@talent-casting-dev.local"
+      },
+      "error": "500: マッチング処理中にエラーが発生しました: 'MockRequest' object has no attribute 'headers'",
+      "processing_time": null
+    }
+  ],
+  "summary": {
+    "total_test_cases": 3,
+    "successful_cases": 0,
+    "average_processing_time": 0.0
+  }
+}

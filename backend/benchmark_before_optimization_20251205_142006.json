@@ -1,0 +1,92 @@
+{
+  "timestamp": "20251205_142006",
+  "description": "Phase A最適化実装前のベンチマーク結果",
+  "test_cases": [
+    {
+      "test_case": {
+        "name": "化粧品_女性20-34_5000万円",
+        "company_name": "株式会社テストクライアント",
+        "industry": "化粧品・ヘアケア・オーラルケア",
+        "target_segments": "女性20-34歳",
+        "purpose": "商品サービスの特長訴求のため",
+        "budget": "3,000万円〜5,000万円未満",
+        "email": "test@talent-casting-dev.local"
+      },
+      "error": "400: 予算区分 '3,000万円〜5,000万円未満' が見つかりません（正規化後: '3,000万円〜5,000万円未満'）",
+      "processing_time": null
+    },
+    {
+      "test_case": {
+        "name": "医薬品_男性20-34_1億円以上",
+        "company_name": "株式会社テストクライアント",
+        "industry": "医薬品・医療・健康食品",
+        "target_segments": "男性20-34歳",
+        "purpose": "商品サービスの特長訴求のため",
+        "budget": "1億円以上",
+        "email": "test@talent-casting-dev.local"
+      },
+      "error": "unsupported format string passed to NoneType.__format__",
+      "processing_time": null
+    },
+    {
+      "test_case": {
+        "name": "食品_女性35-49_1000万円台",
+        "company_name": "株式会社テストクライアント",
+        "industry": "食品・飲料・酒類",
+        "target_segments": "女性35-49歳",
+        "purpose": "ブランドの認知度向上のため",
+        "budget": "1,000万円〜3,000万円未満",
+        "email": "test@talent-casting-dev.local"
+      },
+      "processing_time": 9.45058798789978,
+      "result_count": 30,
+      "top_5_talents": [
+        {
+          "rank": 1,
+          "name": "長澤まさみ",
+          "matching_score": 98.5,
+          "base_power_score": 54.0,
+          "image_adjustment": 9.0,
+          "account_id": 651
+        },
+        {
+          "rank": 2,
+          "name": "大泉洋",
+          "matching_score": 98.4,
+          "base_power_score": 52.9,
+          "image_adjustment": 6.428571428571429,
+          "account_id": 1171
+        },
+        {
+          "rank": 3,
+          "name": "新垣結衣",
+          "matching_score": 97.7,
+          "base_power_score": 50.7,
+          "image_adjustment": 5.142857142857143,
+          "account_id": 30
+        },
+        {
+          "rank": 4,
+          "name": "松嶋菜々子",
+          "matching_score": 94.1,
+          "base_power_score": 45.6,
+          "image_adjustment": 7.285714285714286,
+          "account_id": 1041
+        },
+        {
+          "rank": 5,
+          "name": "深津絵里",
+          "matching_score": 94.6,
+          "base_power_score": 44.6,
+          "image_adjustment": 8.142857142857142,
+          "account_id": 615
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_test_cases": 3,
+    "successful_cases": 1,
+    "average_processing_time": 9.45058798789978
+  }
+}

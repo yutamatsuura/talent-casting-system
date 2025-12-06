@@ -1,0 +1,76 @@
+# Google Cloud Build設定ファイル
+# Cloud Run自動デプロイメント + セキュリティ最適化
+
+steps:
+# ===== Step 1: Dockerイメージビルド =====
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:${SHORT_SHA}'
+  - '-t'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:latest'
+  - '.'
+  dir: 'backend'
+
+# ===== Step 2: Container Registry Push =====
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'push'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:${SHORT_SHA}'
+
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - 'push'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:latest'
+
+# ===== Step 3: Cloud Run デプロイ =====
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'run'
+  - 'deploy'
+  - 'talent-casting-api'
+  - '--image'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:${SHORT_SHA}'
+  - '--platform'
+  - 'managed'
+  - '--region'
+  - 'asia-northeast1'  # 東京リージョン
+  - '--allow-unauthenticated'
+  - '--memory'
+  - '2Gi'
+  - '--cpu'
+  - '1'
+  - '--min-instances'
+  - '0'
+  - '--max-instances'
+  - '10'
+  - '--concurrency'
+  - '80'
+  - '--timeout'
+  - '300'
+  - '--set-env-vars'
+  - |
+    NODE_ENV=production,
+    DATABASE_URL=${_DATABASE_URL},
+    CORS_ORIGIN=${_CORS_ORIGIN},
+    RATE_LIMIT_PER_SECOND=10,
+    DB_POOL_SIZE=8,
+    DB_MAX_OVERFLOW=12,
+    DB_POOL_TIMEOUT=5
+  - '--port'
+  - '8080'
+
+# ===== 代替値設定 =====
+substitutions:
+  _DATABASE_URL: 'postgresql://neondb_owner:npg_5X1MlRZzVheF@ep-sparkling-smoke-a183z7h8-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+  _CORS_ORIGIN: 'https://app.yourdomain.com'
+
+# ===== ビルド設定 =====
+options:
+  machineType: 'E2_HIGHCPU_8'  # 高速ビルド用
+  diskSizeGb: 100
+  logging: CLOUD_LOGGING_ONLY
+
+# ===== タイムアウト設定 =====
+timeout: '1200s'  # 20分

@@ -1,0 +1,12 @@
+{
+  "industry": "菓子・氷菓",
+  "target_segments": "女性20-34歳",
+  "purpose": "商品サービスの売上拡大",
+  "budget": "1,000万円未満",
+  "company_name": "株式会社テストクライアント",
+  "email": "test@talent-casting-dev.local",
+  "contact_name": "テスト太郎",
+  "phone": "090-1234-5678",
+  "genre_preference": "希望ジャンルあり",
+  "preferred_genres": ["俳優", "アーティスト"]
+}
