@@ -146,6 +146,8 @@ export function TalentCastingForm() {
     if (validateStep(currentStep)) {
       if (currentStep < TOTAL_FORM_STEPS) {
         setCurrentStep(currentStep + 1);
+        // ページトップにスムーズにスクロール
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         if (process.env.NODE_ENV !== 'production') {
           console.log('🚀 診断処理開始 - 最終ステップ');
@@ -299,6 +301,8 @@ export function TalentCastingForm() {
 
   const handleBack = () => {
     setCurrentStep(Math.max(1, currentStep - 1));
+    // ページトップにスムーズにスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleReset = () => {
@@ -310,6 +314,8 @@ export function TalentCastingForm() {
     setApiResults([]);
     setApiError(null);
     localStorage.removeItem(STORAGE_KEY);
+    // ページトップにスムーズにスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const progress = (currentStep / TOTAL_FORM_STEPS) * 100;
@@ -366,7 +372,7 @@ export function TalentCastingForm() {
   }
 
   return (
-    <Box sx={{ maxWidth: '600px', mx: 'auto', px: 2, pt: 1, pb: 1.5 }}>
+    <Box sx={{ maxWidth: '600px', mx: 'auto', px: { xs: 0, sm: 2 }, pt: 1, pb: 1.5 }}>
 
       {/* シンプルなヘッダー */}
       <Box sx={{ mb: 1, textAlign: 'center' }}>

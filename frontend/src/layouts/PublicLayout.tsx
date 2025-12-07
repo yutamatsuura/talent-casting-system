@@ -44,7 +44,7 @@ export function PublicLayout({
           alignItems: 'center',
           justifyContent: 'center',
           py: showHeader ? 2 : 1,
-          px: 2,
+          px: { xs: 0.5, sm: 2 },
         }}
       >
         <Container maxWidth={maxWidth}>

@@ -120,12 +120,25 @@ const messageTemplates: Record<string, Record<string, string>> = {
 export function generateDetailedPersonalizedMessage(data: PersonalizedMessageData): string {
   const { companyName, industry, purpose } = data;
 
+  console.log('🎯 詳細メッセージ生成開始:', { companyName, industry, purpose });
+
   // 基本挨拶部分
   const greeting = `${companyName}様`;
 
   // 業界×目的別の詳細メッセージ（フォールバック処理付き）
   const industryMessages = messageTemplates[industry] || messageTemplates['その他'];
+  console.log('🏢 業界メッセージテンプレート:', {
+    industry,
+    hasIndustryTemplate: !!messageTemplates[industry],
+    industryMessages: Object.keys(industryMessages || {})
+  });
+
   const detailMessage = industryMessages?.[purpose] || industryMessages?.['認知度向上'] || 'では、貴社に最適なタレントとの戦略的な協力をご提案いたします。';
+  console.log('🎯 選択されたメッセージ:', {
+    purpose,
+    hasPurposeMessage: !!industryMessages?.[purpose],
+    detailMessage
+  });
 
   // 目的に応じた追加メッセージ
   const purposeAddOn = getPurposeSpecificMessage(purpose);
@@ -133,7 +146,10 @@ export function generateDetailedPersonalizedMessage(data: PersonalizedMessageDat
   // 共通のCTA部分
   const cta = '今だけ限定で、専任コンサルタントによる無料カウンセリング(60分)を実施中です。貴社に最適な戦略と具体的な候補者リストをご用意してお待ちしております。';
 
-  return `${greeting}、${industry}${detailMessage} ${purposeAddOn} ${cta}`;
+  const finalMessage = `${greeting}、${industry}${detailMessage} ${purposeAddOn} ${cta}`;
+  console.log('📝 最終メッセージ:', finalMessage);
+
+  return finalMessage;
 }
 
 /**

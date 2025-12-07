@@ -111,26 +111,33 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
   };
 
   const generatePersonalizedMessage = (): string => {
-    const companyName = formData.q4 || '貴社';
-    const originalIndustry = formData.q2;
-    const purpose = formData.q3_2;
+    // URLパラメータデコード後のフィールド名と従来のフィールド名の両方をサポート
+    const formDataAny = formData as any;
+    const companyName = formData.q4 || formDataAny.company_name || '貴社';
+    const originalIndustry = formData.q2 || formDataAny.industry;
+    const purpose = formData.q3_2 || formDataAny.purpose;
 
     // フォーム選択値をテンプレートキーに変換
     const mappedIndustry = mapIndustryToTemplateKey(originalIndustry || '');
 
     // デバッグログ: パーソナライゼーションデータの確認（本番環境では無効化）
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🎭 パーソナライゼーションデータ確認:', {
-        q4_companyName: formData.q4,
-        q2_industry_original: originalIndustry,
-        q2_industry_mapped: mappedIndustry,
-        q3_2_purpose: formData.q3_2,
-        formDataFull: formData
-      });
-    }
+    console.log('🎭 パーソナライゼーションデータ確認:');
+    console.log('  - companyName (final):', companyName);
+    console.log('  - originalIndustry (final):', originalIndustry);
+    console.log('  - mappedIndustry:', mappedIndustry);
+    console.log('  - purpose (final):', purpose);
+    console.log('  - 旧フィールド名 - q4/q2/q3_2:', formData.q4, '/', formData.q2, '/', formData.q3_2);
+    console.log('  - 新フィールド名 - company_name/industry/purpose:', formDataAny.company_name, '/', formDataAny.industry, '/', formDataAny.purpose);
 
     // 業界と目的が両方選択されている場合は詳細なメッセージを生成
     if (originalIndustry && purpose) {
+      console.log('🔄 詳細メッセージ生成を試行中...', {
+        originalIndustry,
+        mappedIndustry,
+        purpose,
+        companyName
+      });
+
       try {
         const result = generateDetailedPersonalizedMessage({
           companyName,
@@ -138,25 +145,26 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
           purpose
         });
 
-        // 成功ログを出力
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('✅ 詳細パーソナライズメッセージ生成成功');
-        }
-
+        console.log('✅ 詳細パーソナライズメッセージ生成成功:', result);
         return result;
       } catch (error) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('詳細メッセージ生成に失敗、フォールバックを使用:', error);
-        }
+        console.warn('❌ 詳細メッセージ生成に失敗、フォールバックを使用:', error);
       }
+    } else {
+      console.log('⚠️ 条件不足で詳細メッセージをスキップ:');
+      console.log('  - originalIndustry exists:', !!originalIndustry, '| value:', originalIndustry);
+      console.log('  - purpose exists:', !!purpose, '| value:', purpose);
     }
 
     // フォールバック用のシンプルメッセージ
-    return generateSimplePersonalizedMessage({
+    const fallbackMessage = generateSimplePersonalizedMessage({
       companyName,
       industry: mappedIndustry || '業界',
       purpose: purpose || 'ブランド価値向上'
     });
+
+    console.log('📝 フォールバックメッセージ使用:', fallbackMessage);
+    return fallbackMessage;
   };
 
   // ボタンクリック追跡関数
@@ -245,7 +253,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
   }, [formData?.q2]);
 
   return (
-    <Container maxWidth="lg" sx={{ pt: 1, pb: 2, px: { xs: 3, sm: 4, md: 6 } }}>
+    <Container maxWidth="lg" sx={{ pt: 1, pb: 2, px: { xs: 0.5, sm: 2, md: 6 } }}>
       <Card elevation={3}>
         <CardHeader
           title="診断結果"
@@ -318,11 +326,33 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                 <Typography variant="h4" fontWeight="bold" gutterBottom>
                   おすすめタレント
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                <Box
+                  sx={{
+                    display: { xs: 'block', sm: 'flex' },
+                    justifyContent: { sm: 'space-between' },
+                    alignItems: { sm: 'center' },
+                    mb: 2,
+                    gap: { xs: 1, sm: 0 }
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mb: { xs: 1, sm: 0 },
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                    }}
+                  >
                     合計11,000名中、上位30名から厳選してご提案
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                      textAlign: { xs: 'left', sm: 'right' }
+                    }}
+                  >
                     {currentPage}ページ目 ({startIndex + 1}〜{Math.min(endIndex, talents.length)}件目 / {talents.length}件)
                   </Typography>
                 </Box>
@@ -549,10 +579,10 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
               {/* 特別特典セクション */}
               <Box
                 sx={{
-                  p: 4,
+                  p: { xs: 2, sm: 3, md: 4 },
                   borderRadius: 3,
                   background: 'linear-gradient(135deg, #e3f2fd 0%, #e8f0ff 100%)',
-                  mt: 5,
+                  mt: { xs: 3, md: 5 },
                   mb: 2
                 }}
               >
@@ -587,7 +617,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                   sx={{
                     bgcolor: 'white',
                     borderRadius: 3,
-                    p: 4,
+                    p: { xs: 2, sm: 3, md: 4 },
                     boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                   }}
                 >
@@ -595,15 +625,15 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                     sx={{
                       display: 'grid',
                       gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                      gap: 4,
+                      gap: { xs: 2, md: 4 },
                     }}
                   >
                     {/* 左側：無料カウンセリング */}
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
                       <Box
                         sx={{
-                          width: 64,
-                          height: 64,
+                          width: { xs: 48, md: 64 },
+                          height: { xs: 48, md: 64 },
                           borderRadius: '50%',
                           bgcolor: '#e3f2fd',
                           display: 'flex',
@@ -612,7 +642,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                           flexShrink: 0
                         }}
                       >
-                        <CalendarMonth sx={{ fontSize: 32, color: 'primary.main' }} />
+                        <CalendarMonth sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
                       </Box>
                       <Box>
                         <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
@@ -625,11 +655,11 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                     </Box>
 
                     {/* 右側：タレント詳細情報 */}
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
                       <Box
                         sx={{
-                          width: 64,
-                          height: 64,
+                          width: { xs: 48, md: 64 },
+                          height: { xs: 48, md: 64 },
                           borderRadius: '50%',
                           bgcolor: '#e3f2fd',
                           display: 'flex',
@@ -638,7 +668,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                           flexShrink: 0
                         }}
                       >
-                        <Download sx={{ fontSize: 32, color: 'primary.main' }} />
+                        <Download sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
                       </Box>
                       <Box>
                         <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
