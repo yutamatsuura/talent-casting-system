@@ -87,6 +87,20 @@ export function AnalysisLoadingScreen({ onComplete }: { onComplete: () => void }
 
   console.log('🔄 AnalysisLoadingScreen コンポーネント開始');
 
+  // LP側にローディング開始を通知
+  useEffect(() => {
+    window.parent.postMessage({
+      type: 'analysis_loading_start'
+    }, '*');
+
+    return () => {
+      // コンポーネント終了時にローディング終了を通知
+      window.parent.postMessage({
+        type: 'analysis_loading_end'
+      }, '*');
+    };
+  }, []);
+
   useEffect(() => {
     const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
     let elapsed = 0;
