@@ -207,7 +207,7 @@ export default function ResultsStandalonePage() {
     console.log('🔄 完全リセット実行中...');
 
     // URLにリセットフラグを追加してランディングページに遷移
-    const resetUrl = 'https://e-spirit-82dwemps2-yutamatsuuras-projects.vercel.app/?reset=true&timestamp=' + new Date().getTime();
+    const resetUrl = 'https://e-spirit.vercel.app/?reset=true&timestamp=' + new Date().getTime();
     console.log('🏠 リセット状態でランディングページに遷移:', resetUrl);
 
     // 強制的にページをリロード
@@ -216,7 +216,7 @@ export default function ResultsStandalonePage() {
 
   const handleBackToLanding = () => {
     // ランディングページに戻る
-    window.location.href = '/';
+    window.location.href = 'https://e-spirit.vercel.app/';
   };
 
   if (isLoading) {
