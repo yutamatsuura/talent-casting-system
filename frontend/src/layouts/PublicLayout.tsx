@@ -43,7 +43,7 @@ export function PublicLayout({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          py: showHeader ? 2 : 1,
+          py: showHeader ? { xs: '2rem 0.5rem 10rem', sm: 2 } : { xs: '1rem 0.5rem 10rem', sm: 1 },
           px: { xs: 0.5, sm: 2 },
         }}
       >

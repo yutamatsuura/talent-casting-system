@@ -372,7 +372,7 @@ export function TalentCastingForm() {
   }
 
   return (
-    <Box sx={{ maxWidth: '600px', mx: 'auto', px: { xs: 0, sm: 2 }, pt: 1, pb: 1.5 }}>
+    <Box sx={{ maxWidth: '600px', mx: 'auto', px: { xs: 0, sm: 2 }, pt: 1, pb: { xs: 10, sm: 3, md: 1.5 } }}>
 
       {/* シンプルなヘッダー */}
       <Box sx={{ mb: 1, textAlign: 'center' }}>
@@ -432,7 +432,7 @@ export function TalentCastingForm() {
             display: 'flex',
             justifyContent: 'space-between',
             p: 2,
-            pb: 4,
+            pb: { xs: 10, sm: 4 },
             borderTop: 1,
             borderColor: 'divider',
           }}
