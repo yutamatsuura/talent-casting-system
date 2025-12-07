@@ -115,16 +115,12 @@ export function AnalysisLoadingScreen({ onComplete }: { onComplete: () => void }
   return (
     <Box
       sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
+        minHeight: '100vh',
+        width: '100%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #e3f2fd 0%, #c5cae9 100%)',
-        zIndex: 9999,
         px: 1,
         py: 2,
       }}
