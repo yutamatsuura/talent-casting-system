@@ -207,7 +207,7 @@ export default function ResultsStandalonePage() {
     console.log('🔄 完全リセット実行中...');
 
     // URLにリセットフラグを追加してランディングページに遷移
-    const resetUrl = 'https://landing-puce-rho-58.vercel.app/?reset=true&timestamp=' + new Date().getTime();
+    const resetUrl = 'https://e-spirit-82dwemps2-yutamatsuuras-projects.vercel.app/?reset=true&timestamp=' + new Date().getTime();
     console.log('🏠 リセット状態でランディングページに遷移:', resetUrl);
 
     // 強制的にページをリロード
