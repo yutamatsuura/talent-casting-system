@@ -53,11 +53,11 @@ class UltraOptimizedMatchingQueries:
               )
         ),
         step1_base_power AS (
-            -- STEP 1: 基礎パワー得点計算（base_power_scoreを直接使用で高速化）
+            -- STEP 1: 基礎パワー得点計算（仕様通り: (VR人気度 + TPRパワースコア) / 2）
             SELECT
                 ts.account_id,
                 ts.target_segment_id,
-                COALESCE(ts.base_power_score, 0) AS base_power_score
+                (COALESCE(ts.vr_popularity, 0) + COALESCE(ts.tpr_power_score, 0)) / 2.0 AS base_power_score
             FROM talent_scores ts
             WHERE ts.target_segment_id = $2
         ),
