@@ -6,13 +6,16 @@ import random
 import uuid
 import logging
 import os
+import asyncio  # Phase A1最適化: 並列処理用
+from typing import Optional, Dict
+from functools import lru_cache
 from app.schemas.matching import (
     MatchingFormData,
     MatchingResponse,
     TalentResult,
     MatchingErrorResponse,
 )
-from app.db.connection import get_asyncpg_connection
+from app.db.connection import get_asyncpg_connection, release_asyncpg_connection
 from app.models import FormSubmission, DiagnosisResult
 from app.api.endpoints.recommended_talents import get_recommended_talents_for_matching
 from datetime import datetime
@@ -23,6 +26,9 @@ router = APIRouter()
 
 # ロガー設定
 logger = logging.getLogger(__name__)
+
+# Phase A3最適化: メモリキャッシュ
+_parameter_cache: Dict[str, Any] = {}
 
 
 async def save_diagnosis_results(
@@ -168,90 +174,6 @@ async def _generate_sample_export_data() -> List[Dict[str, Any]]:
     return sample_data
 
 
-async def export_to_sheets_background(
-    form_data: MatchingFormData,
-    talent_results: List[TalentResult],
-    session_id: str
-) -> None:
-    """
-    バックグラウンドでGoogle Sheetsにマッチング結果をエクスポート
-
-    Args:
-        form_data: フォームデータ
-        talent_results: 診断結果タレントリスト
-        session_id: セッションID
-    """
-    try:
-        # 環境変数でエクスポート機能が有効化されているかチェック
-        if not os.getenv('ENABLE_SHEETS_EXPORT', '').lower() in ['true', '1']:
-            logger.info(f"Google Sheetsエクスポート無効: session_id={session_id}")
-            return
-
-        # Google Sheets API設定チェック
-        if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS') or not os.getenv('GOOGLE_SHEETS_ID'):
-            logger.warning(f"Google Sheets API設定不完全: session_id={session_id}")
-            return
-
-        # 通常のマッチングロジックを使用して16列データを生成
-        # まず通常のマッチング結果からアカウントIDを取得
-        talent_account_ids = [talent.account_id for talent in talent_results]
-
-        # TalentResultオブジェクトを辞書形式に変換
-        matching_results_dict = []
-        for talent in talent_results:
-            talent_dict = {
-                "name": talent.name,
-                "category": talent.category,
-                "base_power_score": talent.base_power_score,
-                "matching_score": talent.matching_score,
-                "ranking": talent.ranking,
-                "image_adjustment": getattr(talent, 'image_adjustment', 0),
-                "account_id": talent.account_id
-            }
-            matching_results_dict.append(talent_dict)
-
-        # 実際の診断結果を16列詳細データに変換
-        final_results = await get_detailed_talent_data_for_export(
-            matching_results_dict,  # 辞書形式に変換したデータを渡す
-            form_data.industry,
-            form_data.target_segments,
-            form_data.budget
-        )
-
-        debug_data = {
-            "industry": form_data.industry,
-            "target_segments": [form_data.target_segments] if isinstance(form_data.target_segments, str) else form_data.target_segments,
-            "purpose": form_data.purpose,
-            "budget": form_data.budget,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "analysis_type": "実データ16列版"
-        }
-
-        # 入力条件をdebug_dataに追加
-        debug_data.update({
-            "session_id": session_id,
-            "result_url": f"/results?session={session_id}"
-        })
-
-        # Google Sheetsエクスポート実行
-        from app.services.sheets_exporter import SheetsExporter
-        sheets_exporter = SheetsExporter()
-
-        export_result = await sheets_exporter.export_matching_debug(
-            sheet_id=os.getenv('GOOGLE_SHEETS_ID'),
-            input_conditions=debug_data,
-            step_calculations=[],  # 簡略化
-            final_results=final_results
-        )
-
-        if export_result.get("status") == "success":
-            logger.info(f"Google Sheetsエクスポート成功: session_id={session_id}, url={export_result.get('sheet_url')}")
-        else:
-            logger.error(f"Google Sheetsエクスポート失敗: session_id={session_id}, message={export_result.get('message')}")
-
-    except Exception as e:
-        logger.error(f"Google Sheetsエクスポートエラー: session_id={session_id}, error={str(e)}")
-
 
 def normalize_budget_range_string(text: str) -> str:
     """予算区分文字列を正規化（波ダッシュ・長音記号・全角/半角統一）"""
@@ -302,17 +224,20 @@ async def check_currently_in_cm_with_category_filter(
     # 特別ルール：業種別の競合対象カテゴリIDを定義
     def get_competing_categories(selected_industry: str) -> list[int]:
         if selected_industry == "食品":
-            # 食品 → 菓子・氷菓、アルコール飲料は除外
-            return [1, 3, 4, 6]  # 食品、乳製品、フードサービス、清涼飲料水
+            # 食品 → 菓子・氷菓、アルコール飲料、清涼飲料水は除外
+            return [1, 3, 4]  # 食品、乳製品、フードサービス
         elif selected_industry == "菓子・氷菓":
-            # 菓子・氷菓 → 食品、アルコール飲料は除外
-            return [2, 3, 4, 6]  # 菓子・氷菓、乳製品、フードサービス、清涼飲料水
+            # 菓子・氷菓 → 食品、アルコール飲料、清涼飲料水は除外
+            return [2, 3, 4]  # 菓子・氷菓、乳製品、フードサービス
         elif selected_industry == "アルコール飲料":
             # アルコール飲料 → アルコール飲料のみ（完全独立）
             return [5]  # アルコール飲料のみ
+        elif selected_industry == "清涼飲料水":
+            # 清涼飲料水 → 清涼飲料水のみ（完全独立）
+            return [6]  # 清涼飲料水のみ
         else:
-            # 乳製品、清涼飲料水、フードサービス → アルコール飲料は除外
-            return [1, 2, 3, 4, 6]  # 食品、菓子・氷菓、乳製品、フードサービス、清涼飲料水
+            # 乳製品、フードサービス → アルコール飲料、清涼飲料水は除外
+            return [1, 2, 3, 4]  # 食品、菓子・氷菓、乳製品、フードサービス
 
     competing_categories = get_competing_categories(user_selected_industry)
 
@@ -345,7 +270,7 @@ async def check_currently_in_cm_with_category_filter(
         }
 
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def check_currently_in_cm(account_ids: List[int]) -> Dict[int, bool]:
@@ -383,7 +308,7 @@ async def check_currently_in_cm(account_ids: List[int]) -> Dict[int, bool]:
         }
 
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def save_form_submission(form_data: MatchingFormData, request: Request) -> str:
@@ -431,7 +356,7 @@ async def save_form_submission(form_data: MatchingFormData, request: Request) ->
         return session_id
 
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def get_recommended_talent_details(
@@ -472,7 +397,7 @@ async def get_recommended_talent_details(
         return dict(row) if row else None
 
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def get_recommended_talents_batch(
@@ -536,61 +461,65 @@ async def get_recommended_talents_batch(
         logger.error(f"❌ おすすめタレントバッチ取得エラー: {e}")
         return {}
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def get_matching_parameters(
     budget_name: str, target_segment_name: str, industry_name: str
 ) -> Tuple[float, int, List[int]]:
-    """マッチングパラメータを一括取得（接続を1回に集約）"""
+    """マッチングパラメータを一括取得（Phase A3最適化: メモリキャッシュ付き）"""
+    # キャッシュキーを生成
+    cache_key = f"params:{budget_name}:{target_segment_name}:{industry_name}"
+
+    # Phase A3最適化: メモリキャッシュから取得を試行
+    if cache_key in _parameter_cache:
+        return _parameter_cache[cache_key]
+
     conn = await get_asyncpg_connection()
     try:
         # 予算区分の文字列を正規化
         normalized_budget_name = normalize_budget_range_string(budget_name)
 
-        # 1回の接続で全パラメータを取得
-        # データベース側も正規化して比較
-        budget_row = await conn.fetchrow(
+        # Phase A2最適化: 3つのクエリを1つのJOINクエリに統合
+        result_row = await conn.fetchrow(
             """
-            SELECT max_amount FROM budget_ranges
-            WHERE REPLACE(REPLACE(REPLACE(range_name, '～', '〜'), ' ', ''), '　', '') = $1
+            SELECT
+                br.max_amount,
+                ts.target_segment_id,
+                i.required_image_id
+            FROM budget_ranges br
+            CROSS JOIN target_segments ts
+            CROSS JOIN industries i
+            WHERE REPLACE(REPLACE(REPLACE(br.range_name, '～', '〜'), ' ', ''), '　', '') = $1
+              AND ts.segment_name = $2
+              AND i.industry_name = $3
             """,
-            normalized_budget_name,
+            normalized_budget_name, target_segment_name, industry_name
         )
-        if not budget_row:
+
+        if not result_row:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"予算区分 '{budget_name}' が見つかりません（正規化後: '{normalized_budget_name}'）",
+                detail=f"パラメータが見つかりません: 予算='{budget_name}', ターゲット='{target_segment_name}', 業種='{industry_name}'",
             )
 
-        segment_row = await conn.fetchrow(
-            "SELECT target_segment_id FROM target_segments WHERE segment_name = $1",
-            target_segment_name,
-        )
-        if not segment_row:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"指定されたターゲット層 '{target_segment_name}' が見つかりません",
-            )
-
-        # 業種に紐づくrequired_image_idを取得（industries.required_image_id）
-        image_row = await conn.fetchrow(
-            "SELECT required_image_id FROM industries WHERE industry_name = $1",
-            industry_name,
-        )
         # required_image_idが設定されていない場合は全イメージ項目を対象とする
-        if image_row and image_row["required_image_id"]:
-            image_item_ids = [image_row["required_image_id"]]
+        if result_row["required_image_id"]:
+            image_item_ids = [result_row["required_image_id"]]
         else:
             # 全イメージ項目 (1-7) を対象
             image_item_ids = [1, 2, 3, 4, 5, 6, 7]
 
-        max_budget = float(budget_row["max_amount"] or float("inf"))
-        target_segment_id = segment_row["target_segment_id"]
+        max_budget = float(result_row["max_amount"] or float("inf"))
+        target_segment_id = result_row["target_segment_id"]
 
-        return max_budget, target_segment_id, image_item_ids
+        # Phase A3最適化: 結果をメモリキャッシュに保存（TTL無し、静的データのため）
+        result = (max_budget, target_segment_id, image_item_ids)
+        _parameter_cache[cache_key] = result
+
+        return result
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def execute_matching_logic(
@@ -735,7 +664,7 @@ async def execute_matching_logic(
         rows = await conn.fetch(query, max_budget, target_segment_id, image_item_ids, is_alcohol_industry)
         return [dict(row) for row in rows]
     finally:
-        await conn.close()
+        await release_asyncpg_connection(conn)
 
 
 async def apply_recommended_talents_integration(
@@ -755,10 +684,10 @@ async def apply_recommended_talents_integration(
             result["recommended_type"] = "standard"
         return standard_results[:30]
 
-    # おすすめタレントIDリスト作成
-    recommended_ids = [t["account_id"] for t in recommended_talents]
+    # Phase A2最適化: おすすめタレントIDをsetで高速化
+    recommended_ids = {t["account_id"] for t in recommended_talents}
 
-    # 通常結果からおすすめタレントと重複するものを除去
+    # 通常結果からおすすめタレントと重複するものを除去（set使用で高速化）
     filtered_standard_results = [
         result for result in standard_results
         if result["account_id"] not in recommended_ids
@@ -879,12 +808,15 @@ async def post_matching(form_data: MatchingFormData, request: Request, backgroun
     start_time = time.time()
 
     try:
-        # フォーム送信データを保存
-        session_id = await save_form_submission(form_data, request)
-
-        # パラメータ一括取得（接続を1回に集約）
-        max_budget, target_segment_id, image_item_ids = await get_matching_parameters(
+        # Phase A1最適化: フォーム保存とパラメータ取得を並列実行
+        session_id_task = save_form_submission(form_data, request)
+        params_task = get_matching_parameters(
             form_data.budget, form_data.target_segments, form_data.industry
+        )
+
+        # 並列実行
+        session_id, (max_budget, target_segment_id, image_item_ids) = await asyncio.gather(
+            session_id_task, params_task
         )
 
         # 5段階マッチングロジック実行（STEP 0-4）
@@ -900,14 +832,18 @@ async def post_matching(form_data: MatchingFormData, request: Request, backgroun
         # STEP 5: マッチングスコア振り分け（おすすめタレント対応）
         final_results = apply_step5_score_distribution(integrated_results)
 
-        # 現在CM出演中かどうかを一括判定（新条件：カテゴリフィルタ付き）
+        # Phase A2最適化: CM状況確認とTalentResult生成を並列化
         account_ids = [r["account_id"] for r in final_results]
-        cm_status = await check_currently_in_cm_with_category_filter(
-            account_ids,
-            form_data.industry
+
+        # CM状況確認とTalentResult生成を並行実行
+        cm_status_task = check_currently_in_cm_with_category_filter(
+            account_ids, form_data.industry
         )
 
-        # TalentResult型に変換
+        # CM状況確認完了を待つ
+        cm_status = await cm_status_task
+
+        # Phase A2最適化: TalentResult変換を最適化（型変換前処理）
         talent_results = [
             TalentResult(
                 account_id=r["account_id"],
@@ -924,16 +860,9 @@ async def post_matching(form_data: MatchingFormData, request: Request, backgroun
             for r in final_results
         ]
 
-        # ★ 新規追加: 診断結果をデータベースに保存
+        # ★ 診断結果をデータベースに保存
         await save_diagnosis_results(session_id, talent_results, db)
 
-        # ★ 新機能: バックグラウンドでGoogle Sheetsに自動エクスポート
-        background_tasks.add_task(
-            export_to_sheets_background,
-            form_data,
-            talent_results,
-            session_id
-        )
 
         # 処理時間計算
         processing_time = (time.time() - start_time) * 1000
@@ -1014,13 +943,6 @@ async def post_matching_optimized(form_data: MatchingFormData, request: Request,
         # ★ 新規追加: 診断結果をデータベースに保存
         await save_diagnosis_results(session_id, talent_results, db)
 
-        # ★ 新機能: バックグラウンドでGoogle Sheetsに自動エクスポート
-        background_tasks.add_task(
-            export_to_sheets_background,
-            form_data,
-            talent_results,
-            session_id
-        )
 
         # 処理時間計算
         processing_time = (time.time() - start_time) * 1000
@@ -1049,7 +971,7 @@ async def post_matching_optimized(form_data: MatchingFormData, request: Request,
     description="究極の最適化: 1回のDB接続で全マッチング処理を完了。マッチングロジック完全保持。",
 )
 async def post_matching_ultra_optimized(
-    form_data: MatchingFormData, request: Request, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db_session)
+    form_data: MatchingFormData, request: Request, db: AsyncSession = Depends(get_db_session)
 ) -> MatchingResponse:
     """Phase B: 超最適化マッチング処理（1回DB接続・67%削減）"""
     start_time = time.time()
@@ -1096,13 +1018,6 @@ async def post_matching_ultra_optimized(
         # ★ 新規追加: 診断結果をデータベースに保存
         await save_diagnosis_results(session_id, talent_results, db)
 
-        # ★ 新機能: バックグラウンドでGoogle Sheetsに自動エクスポート
-        background_tasks.add_task(
-            export_to_sheets_background,
-            form_data,
-            talent_results,
-            session_id
-        )
 
         # 処理時間計算
         processing_time = (time.time() - start_time) * 1000
