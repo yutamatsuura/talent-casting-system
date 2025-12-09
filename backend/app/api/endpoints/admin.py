@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 from app.db.connection import get_db_session
-from app.models import FormSubmission, ButtonClick
+from app.models import FormSubmission, ButtonClick, DiagnosisResult
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -360,3 +360,165 @@ async def get_booking_link_by_industry(
             "booking_url": "https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm",
             "message": f"エラーが発生したため、デフォルトリンクを返します: {str(e)}"
         }
+
+
+@router.get("/admin/form-submissions/{submission_id}/diagnosis")
+async def get_submission_diagnosis(
+    submission_id: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """特定フォーム送信の診断結果30名取得API
+
+    管理画面の詳細モーダル内で、指定されたフォーム送信に対応する
+    診断結果タレント30名を取得します。
+
+    Args:
+        submission_id: フォーム送信ID
+
+    Returns:
+        診断結果タレント一覧（順位順）
+    """
+    try:
+        # フォーム送信の存在確認
+        submission_query = select(FormSubmission).where(FormSubmission.id == submission_id)
+        submission_result = await db.execute(submission_query)
+        submission = submission_result.scalar_one_or_none()
+
+        if not submission:
+            raise HTTPException(status_code=404, detail=f"フォーム送信ID {submission_id} が見つかりません")
+
+        # 診断結果を取得（順位順）
+        diagnosis_query = select(DiagnosisResult).where(
+            DiagnosisResult.form_submission_id == submission_id
+        ).order_by(DiagnosisResult.ranking)
+
+        diagnosis_result = await db.execute(diagnosis_query)
+        diagnosis_results = diagnosis_result.scalars().all()
+
+        # 診断結果が存在しない場合
+        if not diagnosis_results:
+            return {
+                "form_submission_id": submission_id,
+                "diagnosis_results": [],
+                "message": "この送信に対する診断結果がまだ記録されていません"
+            }
+
+        # レスポンス形式に変換（詳細データ付き）
+        results_data = []
+        for result in diagnosis_results:
+            # タレントの詳細データを取得
+            talent_detail_query = text("""
+                SELECT
+                    ts.vr_popularity,
+                    ts.tpr_power_score,
+                    ts.base_power_score,
+                    t.talent_name,
+                    t.talent_category,
+                    -- イメージスコア取得（最新のターゲット層で）
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = 'おもしろい'
+                     ORDER BY ti.created_at DESC LIMIT 1) as interesting_score,
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = '清潔感がある'
+                     ORDER BY ti.created_at DESC LIMIT 1) as clean_score,
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = '個性的な'
+                     ORDER BY ti.created_at DESC LIMIT 1) as unique_score,
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = '信頼できる'
+                     ORDER BY ti.created_at DESC LIMIT 1) as trustworthy_score,
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = 'かわいい'
+                     ORDER BY ti.created_at DESC LIMIT 1) as cute_score,
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = 'カッコいい'
+                     ORDER BY ti.created_at DESC LIMIT 1) as cool_score,
+                    (SELECT ti.score FROM talent_images ti
+                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
+                     WHERE ti.account_id = :account_id AND ii.image_name = '大人の魅力がある'
+                     ORDER BY ti.created_at DESC LIMIT 1) as mature_score
+                FROM talent_scores ts
+                INNER JOIN m_account t ON ts.account_id = t.account_id
+                WHERE ts.account_id = :account_id
+                LIMIT 1
+            """)
+
+            talent_detail_result = await db.execute(
+                talent_detail_query,
+                {"account_id": result.talent_account_id}
+            )
+            talent_detail = talent_detail_result.fetchone()
+
+            # 詳細データを含むレスポンス
+            result_data = {
+                "ranking": result.ranking,
+                "talent_account_id": result.talent_account_id,
+                "talent_name": result.talent_name,
+                "talent_category": result.talent_category,
+                "matching_score": float(result.matching_score),
+                "created_at": result.created_at.isoformat() + "Z"
+            }
+
+            # 詳細データがある場合は追加
+            if talent_detail:
+                result_data.update({
+                    "vr_popularity": float(talent_detail.vr_popularity) if talent_detail.vr_popularity else 0,
+                    "tpr_power_score": float(talent_detail.tpr_power_score) if talent_detail.tpr_power_score else 0,
+                    "base_power_score": float(talent_detail.base_power_score) if talent_detail.base_power_score else 0,
+                    "interesting_score": float(talent_detail.interesting_score) if talent_detail.interesting_score else 0,
+                    "clean_score": float(talent_detail.clean_score) if talent_detail.clean_score else 0,
+                    "unique_score": float(talent_detail.unique_score) if talent_detail.unique_score else 0,
+                    "trustworthy_score": float(talent_detail.trustworthy_score) if talent_detail.trustworthy_score else 0,
+                    "cute_score": float(talent_detail.cute_score) if talent_detail.cute_score else 0,
+                    "cool_score": float(talent_detail.cool_score) if talent_detail.cool_score else 0,
+                    "mature_score": float(talent_detail.mature_score) if talent_detail.mature_score else 0,
+                    "previous_ranking": 0,  # 従来順位は現在未実装
+                    "industry_image_score": 0,  # 業種別イメージは現在未実装
+                })
+            else:
+                # デフォルト値
+                result_data.update({
+                    "vr_popularity": 0,
+                    "tpr_power_score": 0,
+                    "base_power_score": 0,
+                    "interesting_score": 0,
+                    "clean_score": 0,
+                    "unique_score": 0,
+                    "trustworthy_score": 0,
+                    "cute_score": 0,
+                    "cool_score": 0,
+                    "mature_score": 0,
+                    "previous_ranking": 0,
+                    "industry_image_score": 0,
+                })
+
+            results_data.append(result_data)
+
+        return {
+            "form_submission_id": submission_id,
+            "total_results": len(results_data),
+            "diagnosis_results": results_data,
+            "session_info": {
+                "session_id": submission.session_id,
+                "company_name": submission.company_name,
+                "industry": submission.industry,
+                "target_segment": submission.target_segment,
+                "budget_range": submission.budget_range,
+                "submitted_at": submission.created_at.isoformat() + "Z"
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ 診断結果取得エラー: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"診断結果の取得中にエラーが発生しました: {str(e)}"
+        )

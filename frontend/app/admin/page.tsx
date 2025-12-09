@@ -349,7 +349,7 @@ export default function AdminPage() {
         '最終順位'
       ];
 
-      // 診断結果データを16項目フォーマットに変換
+      // 拡張されたAPIレスポンスデータに基づく16項目CSV変換
       const csvData = diagnosisResults.map(talent => [
         `"${talent.talent_name || ''}"`,
         `"${talent.talent_category || ''}"`,
@@ -380,11 +380,11 @@ export default function AdminPage() {
         '',
         '',
         '■ 実行条件',
-        `企業名,${submission.company_name}`,
-        `担当者,${submission.contact_name}`,
-        `業種,${submission.industry}`,
-        `ターゲット層,${submission.target_segment}`,
-        `予算,${submission.budget_range}`,
+        `企業名,"${submission.company_name}"`,
+        `担当者,"${submission.contact_name}"`,
+        `業種,"${submission.industry}"`,
+        `ターゲット層,"${submission.target_segment}"`,
+        `予算,"${submission.budget_range}"`,
         `起用目的,${submission.purpose || ''}`,
         `診断実行日時,${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`,
         `タレント数,${diagnosisResults.length}件`
