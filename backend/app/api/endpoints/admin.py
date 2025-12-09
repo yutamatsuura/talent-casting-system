@@ -403,59 +403,10 @@ async def get_submission_diagnosis(
                 "message": "この送信に対する診断結果がまだ記録されていません"
             }
 
-        # レスポンス形式に変換（詳細データ付き）
+        # レスポンス形式に変換（基本データ + 詳細データ追加）
         results_data = []
         for result in diagnosis_results:
-            # タレントの詳細データを取得
-            talent_detail_query = text("""
-                SELECT
-                    ts.vr_popularity,
-                    ts.tpr_power_score,
-                    ts.base_power_score,
-                    t.talent_name,
-                    t.talent_category,
-                    -- イメージスコア取得（最新のターゲット層で）
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = 'おもしろい'
-                     ORDER BY ti.created_at DESC LIMIT 1) as interesting_score,
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = '清潔感がある'
-                     ORDER BY ti.created_at DESC LIMIT 1) as clean_score,
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = '個性的な'
-                     ORDER BY ti.created_at DESC LIMIT 1) as unique_score,
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = '信頼できる'
-                     ORDER BY ti.created_at DESC LIMIT 1) as trustworthy_score,
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = 'かわいい'
-                     ORDER BY ti.created_at DESC LIMIT 1) as cute_score,
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = 'カッコいい'
-                     ORDER BY ti.created_at DESC LIMIT 1) as cool_score,
-                    (SELECT ti.score FROM talent_images ti
-                     INNER JOIN image_items ii ON ti.image_item_id = ii.id
-                     WHERE ti.account_id = :account_id AND ii.image_name = '大人の魅力がある'
-                     ORDER BY ti.created_at DESC LIMIT 1) as mature_score
-                FROM talent_scores ts
-                INNER JOIN m_account t ON ts.account_id = t.account_id
-                WHERE ts.account_id = :account_id
-                LIMIT 1
-            """)
-
-            talent_detail_result = await db.execute(
-                talent_detail_query,
-                {"account_id": result.talent_account_id}
-            )
-            talent_detail = talent_detail_result.fetchone()
-
-            # 詳細データを含むレスポンス
+            # 基本データ
             result_data = {
                 "ranking": result.ranking,
                 "talent_account_id": result.talent_account_id,
@@ -465,24 +416,50 @@ async def get_submission_diagnosis(
                 "created_at": result.created_at.isoformat() + "Z"
             }
 
-            # 詳細データがある場合は追加
-            if talent_detail:
+            try:
+                # タレントの基本スコアデータを取得
+                basic_score_query = text("""
+                    SELECT vr_popularity, tpr_power_score, base_power_score
+                    FROM talent_scores
+                    WHERE account_id = :account_id
+                    LIMIT 1
+                """)
+
+                basic_score_result = await db.execute(
+                    basic_score_query,
+                    {"account_id": result.talent_account_id}
+                )
+                basic_score = basic_score_result.fetchone()
+
+                if basic_score:
+                    result_data.update({
+                        "vr_popularity": float(basic_score.vr_popularity) if basic_score.vr_popularity else 0,
+                        "tpr_power_score": float(basic_score.tpr_power_score) if basic_score.tpr_power_score else 0,
+                        "base_power_score": float(basic_score.base_power_score) if basic_score.base_power_score else 0,
+                    })
+                else:
+                    result_data.update({
+                        "vr_popularity": 0,
+                        "tpr_power_score": 0,
+                        "base_power_score": 0,
+                    })
+
+                # イメージスコア（シンプル版）
                 result_data.update({
-                    "vr_popularity": float(talent_detail.vr_popularity) if talent_detail.vr_popularity else 0,
-                    "tpr_power_score": float(talent_detail.tpr_power_score) if talent_detail.tpr_power_score else 0,
-                    "base_power_score": float(talent_detail.base_power_score) if talent_detail.base_power_score else 0,
-                    "interesting_score": float(talent_detail.interesting_score) if talent_detail.interesting_score else 0,
-                    "clean_score": float(talent_detail.clean_score) if talent_detail.clean_score else 0,
-                    "unique_score": float(talent_detail.unique_score) if talent_detail.unique_score else 0,
-                    "trustworthy_score": float(talent_detail.trustworthy_score) if talent_detail.trustworthy_score else 0,
-                    "cute_score": float(talent_detail.cute_score) if talent_detail.cute_score else 0,
-                    "cool_score": float(talent_detail.cool_score) if talent_detail.cool_score else 0,
-                    "mature_score": float(talent_detail.mature_score) if talent_detail.mature_score else 0,
-                    "previous_ranking": 0,  # 従来順位は現在未実装
-                    "industry_image_score": 0,  # 業種別イメージは現在未実装
+                    "interesting_score": 0,
+                    "clean_score": 0,
+                    "unique_score": 0,
+                    "trustworthy_score": 0,
+                    "cute_score": 0,
+                    "cool_score": 0,
+                    "mature_score": 0,
+                    "previous_ranking": 0,
+                    "industry_image_score": 0,
                 })
-            else:
-                # デフォルト値
+
+            except Exception as e:
+                print(f"⚠️ タレント詳細データ取得エラー (account_id: {result.talent_account_id}): {e}")
+                # エラー時はデフォルト値
                 result_data.update({
                     "vr_popularity": 0,
                     "tpr_power_score": 0,
