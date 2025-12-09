@@ -353,9 +353,9 @@ export default function AdminPage() {
       const csvData = diagnosisResults.map(talent => [
         `"${talent.talent_name || ''}"`,
         `"${talent.talent_category || ''}"`,
-        talent.vr_popularity || 0,
-        talent.tpr_power_score || 0,
-        talent.base_power_score || 0,
+        talent.vr_popularity || 0,           // VR人気度
+        talent.tpr_power_score || 0,         // TPRスコア
+        talent.base_power_score || 0,        // 従来スコア（基礎パワー得点）
         talent.interesting_score || 0,
         talent.clean_score || 0,
         talent.unique_score || 0,
