@@ -320,6 +320,98 @@ export default function AdminPage() {
     link.click();
   };
 
+  // 診断結果CSVエクスポート（16項目フォーマット）
+  const handleExportDiagnosisCSV = (submission: FormSubmissionData | null) => {
+    if (!submission || diagnosisResults.length === 0) {
+      setCopyMessage('エクスポート可能な診断結果がありません');
+      setCopySnackbarOpen(true);
+      return;
+    }
+
+    try {
+      // Google Sheetsと同じ16項目ヘッダー
+      const headers = [
+        'タレント名',
+        'カテゴリー',
+        'VR人気度',
+        'TPRスコア',
+        '従来スコア',
+        'おもしろさ',
+        '清潔感',
+        '個性的な',
+        '信頼できる',
+        'かわいい',
+        'カッコいい',
+        '大人の魅力',
+        '従来順位',
+        '業種別イメージ',
+        '最終スコア',
+        '最終順位'
+      ];
+
+      // 診断結果データを16項目フォーマットに変換
+      const csvData = diagnosisResults.map(talent => [
+        `"${talent.talent_name || ''}"`,
+        `"${talent.talent_category || ''}"`,
+        talent.vr_popularity || 0,
+        talent.tpr_power_score || 0,
+        talent.base_power_score || 0,
+        talent.interesting_score || 0,
+        talent.clean_score || 0,
+        talent.unique_score || 0,
+        talent.trustworthy_score || 0,
+        talent.cute_score || 0,
+        talent.cool_score || 0,
+        talent.mature_score || 0,
+        talent.previous_ranking || 0,
+        talent.industry_image_score || 0,
+        talent.matching_score || 0,
+        talent.ranking || 0
+      ].join(','));
+
+      // CSVコンテンツ作成
+      const csvContent = [
+        headers.join(','),
+        ...csvData
+      ].join('\n');
+
+      // メタデータ追加（空行を挟んで）
+      const metadata = [
+        '',
+        '',
+        '■ 実行条件',
+        `企業名,${submission.company_name}`,
+        `担当者,${submission.contact_name}`,
+        `業種,${submission.industry}`,
+        `ターゲット層,${submission.target_segment}`,
+        `予算,${submission.budget_range}`,
+        `起用目的,${submission.purpose || ''}`,
+        `診断実行日時,${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`,
+        `タレント数,${diagnosisResults.length}件`
+      ].join('\n');
+
+      const finalCsvContent = csvContent + '\n' + metadata;
+
+      // BOM付きCSVでダウンロード
+      const blob = new Blob(['\uFEFF' + finalCsvContent], {
+        type: 'text/csv;charset=utf-8;'
+      });
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `診断結果_${submission.company_name}_${submission.session_id}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+
+      setCopyMessage('診断結果CSVをダウンロードしました');
+      setCopySnackbarOpen(true);
+
+    } catch (error) {
+      console.error('CSV export error:', error);
+      setCopyMessage('CSVエクスポートに失敗しました');
+      setCopySnackbarOpen(true);
+    }
+  };
+
   // 詳細表示（診断結果取得機能追加）
   const handleShowDetail = async (submission: FormSubmissionData) => {
     setSelectedSubmission(submission);
@@ -1629,8 +1721,41 @@ export default function AdminPage() {
               {/* ★ 新規追加: 診断結果セクション */}
               <Grid size={{ xs: 12 }}>
                 <Divider sx={{ my: 3 }} />
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151' }}>
-                  🎯 診断結果タレント (30名)
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#374151' }}>
+                    🎯 診断結果タレント (30名)
+                  </Typography>
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Download />}
+                    onClick={() => handleExportDiagnosisCSV(selectedSubmission)}
+                    disabled={diagnosisResults.length === 0 || diagnosisLoading}
+                    sx={{
+                      borderColor: '#10b981',
+                      color: '#10b981',
+                      fontWeight: 500,
+                      '&:hover': {
+                        backgroundColor: '#ecfdf5',
+                        borderColor: '#059669',
+                        color: '#059669'
+                      },
+                      '&:disabled': {
+                        borderColor: '#d1d5db',
+                        color: '#9ca3af'
+                      }
+                    }}
+                  >
+                    {diagnosisResults.length > 0
+                      ? `診断結果CSV (${diagnosisResults.length}件)`
+                      : '診断結果CSV'
+                    }
+                  </Button>
+                </Box>
+
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  診断結果を詳細分析用16項目CSVでダウンロード
                 </Typography>
 
                 {diagnosisLoading ? (
