@@ -1,0 +1,15 @@
+{
+  "test_case": {
+    "industry": "化粧品・ヘアケア・オーラルケア",
+    "target_segment": "女性20-34歳",
+    "budget_range": "1,000万円〜3,000万円未満"
+  },
+  "phase_a": {
+    "processing_time_ms": 5814.441919326782,
+    "results": [
+      {
+        "account_id": 123,
+        "name": "仁村紗和",
+        "last_name_kana": "ニムラ",
+        "act_genre": "女優",
+        "base_power_score": 

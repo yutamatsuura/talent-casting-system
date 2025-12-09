@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-12-09 23:10:17",
+  "overall_avg_time": 8.059162020683289,
+  "overall_grade": {
+    "grade": "D",
+    "status": "要改善",
+    "emoji": "❌"
+  },
+  "test_results": {
+    "人気ケース": {
+      "avg_response_time": 7.647939682006836,
+      "max_response_time": 8.701245784759521,
+      "avg_result_count": 30,
+      "performance_grade": {
+        "grade": "D",
+        "status": "要改善",
+        "emoji": "❌"
+      },
+      "samples": 3
+    },
+    "一般ケース": {
+      "avg_response_time": 8.470384359359741,
+      "max_response_time": 8.758238077163696,
+      "avg_result_count": 30,
+      "performance_grade": {
+        "grade": "D",
+        "status": "要改善",
+        "emoji": "❌"
+      },
+      "samples": 3
+    }
+  },
+  "recommendation": "🔧 緊急: 5秒超過 - インデックス最適化またはクエリチューニング必須"
+}

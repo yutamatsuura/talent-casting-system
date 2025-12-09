@@ -499,3 +499,69 @@ async def get_submission_diagnosis(
             status_code=500,
             detail=f"診断結果の取得中にエラーが発生しました: {str(e)}"
         )
+
+
+@router.get(
+    "/submissions/{submission_id}/diagnosis-results-for-csv",
+    response_model=Dict[str, Any],
+    summary="Google Sheetsと同じデータソースによる診断結果取得（CSV用）"
+)
+async def get_diagnosis_results_for_csv(
+    submission_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Google Sheetsエクスポートと同じデータソース（enhanced_matching_debug）を使用
+    正確な16列データを取得してCSV出力に使用
+    """
+    try:
+        # フォーム送信データを確認
+        query = select(FormSubmission).where(FormSubmission.id == submission_id)
+        result = await db.execute(query)
+        submission = result.scalar_one_or_none()
+
+        if not submission:
+            raise HTTPException(
+                status_code=404,
+                detail=f"送信ID {submission_id} が見つかりません"
+            )
+
+        # enhanced_matching_debugと同じロジックでデータを取得
+        from app.services.enhanced_matching_debug import get_detailed_talent_data_for_export
+
+        # マッチング条件を構築
+        input_conditions = {
+            "industry": submission.industry,
+            "target_segments": [submission.target_segment],
+            "budget": submission.budget_range,
+            "purpose": submission.usage_purpose,
+            "company_name": submission.company_name,
+            "person_in_charge": submission.person_in_charge,
+            "session_id": submission.session_id
+        }
+
+        # Google Sheetsと同じ詳細データを取得
+        detailed_results = await get_detailed_talent_data_for_export(input_conditions)
+
+        return {
+            "form_submission_id": submission_id,
+            "total_results": len(detailed_results),
+            "csv_export_data": detailed_results,  # Google Sheetsと同じ構造
+            "session_info": {
+                "session_id": submission.session_id,
+                "company_name": submission.company_name,
+                "industry": submission.industry,
+                "target_segment": submission.target_segment,
+                "budget_range": submission.budget_range,
+                "submitted_at": submission.created_at.isoformat() + "Z"
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ CSV用診断結果取得エラー: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="CSV用診断結果取得中にエラーが発生しました"
+        )

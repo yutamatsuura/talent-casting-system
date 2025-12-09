@@ -31,11 +31,11 @@ class Settings(BaseSettings):
     # ===== データベース接続 =====
     database_url: str = Field(..., alias="DATABASE_URL")
 
-    # ===== データベース最適化設定 =====
-    db_pool_size: int = Field(default=10, alias="DB_POOL_SIZE")
-    db_max_overflow: int = Field(default=20, alias="DB_MAX_OVERFLOW")
-    db_pool_timeout: int = Field(default=30, alias="DB_POOL_TIMEOUT")
-    db_pool_recycle: int = Field(default=1800, alias="DB_POOL_RECYCLE")
+    # ===== データベース最適化設定 (Phase A1最適化) =====
+    db_pool_size: int = Field(default=5, alias="DB_POOL_SIZE")  # 10→5: 接続数半減
+    db_max_overflow: int = Field(default=10, alias="DB_MAX_OVERFLOW")  # 20→10: オーバーフロー削減
+    db_pool_timeout: int = Field(default=10, alias="DB_POOL_TIMEOUT")  # 30→10: タイムアウト短縮
+    db_pool_recycle: int = Field(default=600, alias="DB_POOL_RECYCLE")  # 1800→600: 接続回転強化
 
     # ===== セキュリティ設定 =====
     rate_limit_per_second: int = Field(default=10, alias="RATE_LIMIT_PER_SECOND")

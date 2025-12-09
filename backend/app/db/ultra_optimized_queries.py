@@ -165,16 +165,16 @@ class UltraOptimizedMatchingQueries:
         ),
         recommended_talent_scores AS (
             -- おすすめタレント専用スコア取得（予算フィルタ除外）
-            -- ★重要: 既存版と完全一致のため image_adjustment = 0 固定
+            -- ★重要: 正しいSTEP1計算式を適用 (VR人気度 + TPRパワースコア) / 2
             SELECT
                 rtq.account_id,
                 rtq.recommended_ranking,
                 rtq.name,
                 rtq.last_name_kana,
                 rtq.act_genre,
-                COALESCE(ts.base_power_score, 0) as base_power_score,
+                COALESCE((COALESCE(ts.vr_popularity, 0) + COALESCE(ts.tpr_power_score, 0)) / 2.0, 0) as base_power_score,
                 0 as image_adjustment,  -- 簡略化：既存版と一致させるため固定値
-                COALESCE(ts.base_power_score, 0) as reflected_score
+                COALESCE((COALESCE(ts.vr_popularity, 0) + COALESCE(ts.tpr_power_score, 0)) / 2.0, 0) as reflected_score
             FROM recommended_talents_query rtq
             LEFT JOIN talent_scores ts ON rtq.account_id = ts.account_id AND ts.target_segment_id = $2
         )
@@ -224,22 +224,35 @@ class UltraOptimizedMatchingQueries:
         """STEP 5: マッチングスコア振り分け（完全保持・高速化）"""
         import random
 
+        # まず最終順位を正しく再計算
+        for i, result in enumerate(results):
+            result['ranking'] = i + 1
+
         for result in results:
             ranking = result['ranking']
 
-            # 既存ロジック完全保持
+            # 順位に基づく段階的スコア計算（範囲内で上位順位が高いスコア）
             if 1 <= ranking <= 3:
-                score_range = (97.0, 99.7)
+                # 1位: 99.7, 2位: 98.7, 3位: 97.7
+                base_score = 99.7 - ((ranking - 1) * 1.0)
+                result['matching_score'] = round(base_score + random.uniform(-0.3, 0.0), 1)
             elif 4 <= ranking <= 10:
-                score_range = (93.0, 96.9)
+                # 4位: 96.9 → 10位: 93.0 (7段階で均等分割)
+                step = (96.9 - 93.0) / 6  # 7段階なので6区間
+                base_score = 96.9 - ((ranking - 4) * step)
+                result['matching_score'] = round(base_score + random.uniform(-0.3, 0.3), 1)
             elif 11 <= ranking <= 20:
-                score_range = (89.0, 92.9)
+                # 11位: 92.9 → 20位: 89.0 (10段階で均等分割)
+                step = (92.9 - 89.0) / 9  # 10段階なので9区間
+                base_score = 92.9 - ((ranking - 11) * step)
+                result['matching_score'] = round(base_score + random.uniform(-0.3, 0.3), 1)
             elif 21 <= ranking <= 30:
-                score_range = (86.0, 88.9)
+                # 21位: 88.9 → 30位: 86.0 (10段階で均等分割)
+                step = (88.9 - 86.0) / 9  # 10段階なので9区間
+                base_score = 88.9 - ((ranking - 21) * step)
+                result['matching_score'] = round(base_score + random.uniform(-0.3, 0.3), 1)
             else:
-                score_range = (80.0, 85.9)
-
-            result['matching_score'] = round(random.uniform(*score_range), 1)
+                result['matching_score'] = round(random.uniform(80.0, 85.9), 1)
 
         return results
 

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.db.connection import init_db, close_db
-from app.api.endpoints import health, target_segments, industries, matching, tracking, admin, recommended_talents, talents
+from app.api.endpoints import health, target_segments, industries, matching, tracking, admin, recommended_talents, talents, admin_debug
 
 
 @asynccontextmanager
@@ -82,6 +82,7 @@ app.include_router(tracking.router, prefix="/api", tags=["Tracking"])
 app.include_router(admin.router, prefix="/api", tags=["Admin Panel"])
 app.include_router(recommended_talents.router, prefix="/api", tags=["Recommended Talents"])
 app.include_router(talents.router, prefix="/api/talents", tags=["Talent Details"])
+app.include_router(admin_debug.router, prefix="/api", tags=["Debug Export"])
 
 
 @app.get("/")

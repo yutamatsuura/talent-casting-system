@@ -1,0 +1,83 @@
+================================================================================
+Phase A vs Phase B 完全性検証
+================================================================================
+
+================================================================================
+テストケース 1: 化粧品・ヘアケア・オーラルケア / 女性20-34歳
+================================================================================
+
+Phase A実行中...
+✓ Phase A完了: 5814.44ms, 30件
+Phase B実行中...
+✓ Phase B完了: 2834.47ms, 30件
+
+⚡ 高速化率: 51.3% (Phase A: 5814.44ms → Phase B: 2834.47ms)
+
+📊 結果比較:
+
+【タレント数】
+  Phase A: 30件
+  Phase B: 30件
+  一致: ✓
+
+【データ欠損チェック】
+  Phase A欠損: ['1位: スコア欠損', '2位: スコア欠損', '3位: スコア欠損', '4位: スコア欠損', '5位: スコア欠損', '6位: スコア欠損', '7位: スコア欠損', '8位: スコア欠損', '9位: スコア欠損', '10位: スコア欠損', '11位: スコア欠損', '12位: スコア欠損', '13位: スコア欠損', '14位: スコア欠損', '15位: スコア欠損', '16位: スコア欠損', '17位: スコア欠損', '18位: スコア欠損', '19位: スコア欠損', '20位: スコア欠損', '21位: スコア欠損', '22位: スコア欠損', '23位: スコア欠損', '24位: スコア欠損', '25位: スコア欠損', '26位: スコア欠損', '27位: スコア欠損', '28位: スコア欠損', '29位: スコア欠損', '30位: スコア欠損']
+  Phase B欠損: なし ✓
+
+【スコア範囲】
+  Phase A: スコアデータなし
+  Phase B: 86.2 〜 99.4 (平均: 91.5)
+
+【順位帯別人数】
+  1-3位:   Phase A=3, Phase B=3
+  4-10位:  Phase A=7, Phase B=7
+  11-20位: Phase A=10, Phase B=10
+  21-30位: Phase A=10, Phase B=10
+
+【タレントID一致率】
+  共通ID: 30件
+  Phase A専用: 0件
+  Phase B専用: 0件
+  一致率: 100.0%
+Traceback (most recent call last):
+  File "/Users/lennon/projects/talent-casting-form/backend/phase_a_vs_b_complete_verification.py", line 316, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/lennon/projects/talent-casting-form/backend/phase_a_vs_b_complete_verification.py", line 296, in main
+    json.dump({
+    ~~~~~~~~~^^
+        "test_case": test_case,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        "comparison": comparison
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    }, f, ensure_ascii=False, indent=2)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/__init__.py", line 179, in dump
+    for chunk in iterable:
+                 ^^^^^^^^
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 433, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 407, in _iterencode_dict
+    yield from chunks
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 407, in _iterencode_dict
+    yield from chunks
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 407, in _iterencode_dict
+    yield from chunks
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 440, in _iterencode
+    o = _default(o)
+  File "/usr/local/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type Decimal is not JSON serializable

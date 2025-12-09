@@ -27,6 +27,12 @@ typing-extensions>=4.12.2
 pandas==2.2.3
 openpyxl==3.1.5
 
+# Google Sheets API
+google-api-python-client==2.151.0
+google-auth==2.36.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+
 # 開発・テスト用ツール
 pytest==7.4.4
 pytest-asyncio==0.23.3

@@ -7,17 +7,14 @@ steps:
   args:
   - 'build'
   - '-t'
-  - 'gcr.io/${PROJECT_ID}/talent-casting-api:${SHORT_SHA}'
-  - '-t'
   - 'gcr.io/${PROJECT_ID}/talent-casting-api:latest'
   - '.'
-  dir: 'backend'
 
 # ===== Step 2: Container Registry Push =====
 - name: 'gcr.io/cloud-builders/docker'
   args:
   - 'push'
-  - 'gcr.io/${PROJECT_ID}/talent-casting-api:${SHORT_SHA}'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:latest'
 
 - name: 'gcr.io/cloud-builders/docker'
   args:
@@ -31,7 +28,7 @@ steps:
   - 'deploy'
   - 'talent-casting-api'
   - '--image'
-  - 'gcr.io/${PROJECT_ID}/talent-casting-api:${SHORT_SHA}'
+  - 'gcr.io/${PROJECT_ID}/talent-casting-api:latest'
   - '--platform'
   - 'managed'
   - '--region'

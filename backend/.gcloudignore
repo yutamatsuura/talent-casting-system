@@ -1,0 +1,94 @@
+# Google Cloud Build ignore file
+# 不要なファイルをアップロードから除外してデプロイ高速化
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Documentation
+docs/
+*.md
+README*
+
+# Backup files
+backup_*/
+*_backup_*
+*.backup
+*.bak
+
+# Analysis and debug scripts
+analyze_*.py
+check_*.py
+debug_*.py
+test_*.py
+verify_*.py
+investigate_*.py
+import_*.py
+fix_*.py
+update_*.py
+create_*.py
+execute_*.py
+audit_*.py
+benchmark_*.py
+search_*.py
+seed_*.py
+insert_*.py
+identify_*.py
+
+# Test data
+test_data.*
+*_test.*
+*.test.*
+
+# Performance testing
+performance_*.py
+*_performance.*
+quick_performance_check.py
+setup_performance_testing.py
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Configuration files that should not be deployed
+.env*
+*.local
+
+# Scripts directory
+scripts/
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db

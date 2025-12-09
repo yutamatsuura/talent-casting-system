@@ -342,6 +342,32 @@ class ButtonClick(Base):
         return f"<ButtonClick(id={self.id}, form_submission_id={self.form_submission_id}, button_type='{self.button_type}')>"
 
 
+class DiagnosisResult(Base):
+    """診断結果タレント30名保存テーブル"""
+    __tablename__ = "diagnosis_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    form_submission_id = Column(Integer, ForeignKey("form_submissions.id", ondelete="CASCADE"), nullable=False)
+    ranking = Column(Integer, nullable=False)
+    talent_account_id = Column(Integer, nullable=False)
+    talent_name = Column(String(255), nullable=False)
+    talent_category = Column(String(255), nullable=True)
+    matching_score = Column(Numeric(5, 2), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    # リレーション
+    form_submission = relationship("FormSubmission", backref="diagnosis_results")
+
+    # インデックス
+    __table_args__ = (
+        Index("idx_diagnosis_results_submission_id", "form_submission_id"),
+        Index("idx_diagnosis_results_ranking", "form_submission_id", "ranking"),
+    )
+
+    def __repr__(self):
+        return f"<DiagnosisResult(id={self.id}, form_submission_id={self.form_submission_id}, ranking={self.ranking}, talent_name='{self.talent_name}')>"
+
+
 class RecommendedTalent(Base):
     """おすすめタレント設定テーブル（業界別）"""
     __tablename__ = "recommended_talents"

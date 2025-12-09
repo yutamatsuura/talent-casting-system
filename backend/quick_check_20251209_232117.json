@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-12-09 23:21:17",
+  "overall_avg_time": 4.397561430931091,
+  "overall_grade": {
+    "grade": "D",
+    "status": "要改善",
+    "emoji": "❌"
+  },
+  "test_results": {
+    "人気ケース": {
+      "avg_response_time": 4.585504372914632,
+      "max_response_time": 6.056339263916016,
+      "avg_result_count": 30,
+      "performance_grade": {
+        "grade": "D",
+        "status": "要改善",
+        "emoji": "❌"
+      },
+      "samples": 3
+    },
+    "一般ケース": {
+      "avg_response_time": 4.209618488947551,
+      "max_response_time": 4.57768988609314,
+      "avg_result_count": 30,
+      "performance_grade": {
+        "grade": "D",
+        "status": "要改善",
+        "emoji": "❌"
+      },
+      "samples": 3
+    }
+  },
+  "recommendation": "📈 改善推奨: 3秒超過 - SQLクエリの最適化を検討"
+}

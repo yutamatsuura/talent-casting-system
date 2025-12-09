@@ -12,6 +12,9 @@ Base = declarative_base()
 engine = None
 async_session_maker = None
 
+# asyncpg接続プール (Phase A1最適化)
+asyncpg_pool = None
+
 
 def get_engine():
     """エンジン取得"""
@@ -23,8 +26,30 @@ def get_session_maker():
     return async_session_maker
 
 
-async def get_asyncpg_connection() -> asyncpg.Connection:
-    """asyncpg直接接続取得（高速クエリ用）"""
+async def get_asyncpg_connection():
+    """asyncpg接続取得（プール使用、Phase A1最適化）"""
+    global asyncpg_pool
+    try:
+        if asyncpg_pool is None:
+            # プールが初期化されていない場合は初期化
+            await init_asyncpg_pool()
+
+        # プールから接続取得
+        return await asyncpg_pool.acquire()
+    except Exception as e:
+        raise Exception(f"Database connection failed: {str(e)}")
+
+
+async def release_asyncpg_connection(conn):
+    """asyncpg接続返却（プール返却、Phase A1最適化）"""
+    global asyncpg_pool
+    if asyncpg_pool and conn:
+        await asyncpg_pool.release(conn)
+
+
+async def init_asyncpg_pool():
+    """asyncpg接続プール初期化（Phase A1最適化）"""
+    global asyncpg_pool
     try:
         # DATABASE_URLからクエリパラメータを除去してasyncpgの引数に変換
         from urllib.parse import urlparse, parse_qs
@@ -44,14 +69,19 @@ async def get_asyncpg_connection() -> asyncpg.Connection:
         if query_params.get('sslmode', [''])[0] in ['require', 'verify-ca', 'verify-full']:
             conn_params['ssl'] = 'require'
 
-        conn = await asyncpg.connect(**conn_params)
-        return conn
+        # プール作成（Phase A1: 小さなプールサイズで効率化）
+        asyncpg_pool = await asyncpg.create_pool(
+            **conn_params,
+            min_size=2,      # 最小2接続
+            max_size=5,      # 最大5接続（設定値と合わせる）
+            command_timeout=10  # コマンドタイムアウト
+        )
     except Exception as e:
-        raise Exception(f"Database connection failed: {str(e)}")
+        raise Exception(f"asyncpg pool initialization failed: {str(e)}")
 
 
 async def check_db_connection() -> bool:
-    """データベース接続確認（ヘルスチェック用）"""
+    """データベース接続確認（プール使用、Phase A1最適化）"""
     conn = None
     try:
         conn = await get_asyncpg_connection()
@@ -63,11 +93,11 @@ async def check_db_connection() -> bool:
         return False
     finally:
         if conn:
-            await conn.close()
+            await release_asyncpg_connection(conn)
 
 
 async def init_db():
-    """データベース初期化（アプリケーション起動時）"""
+    """データベース初期化（アプリケーション起動時、Phase A1最適化）"""
     global engine, async_session_maker
 
     # PostgreSQL URLをasyncpg用に変換（クエリパラメータを除去）
@@ -75,7 +105,7 @@ async def init_db():
     parsed = urlparse(settings.database_url)
     database_url = f"postgresql+asyncpg://{parsed.username}:{parsed.password}@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
 
-    # SQLAlchemy 2.0 Async Engine作成
+    # SQLAlchemy 2.0 Async Engine作成 (Phase A1最適化済み設定値使用)
     engine = create_async_engine(
         database_url,
         echo=settings.node_env == "development",
@@ -93,6 +123,9 @@ async def init_db():
         expire_on_commit=False,
     )
 
+    # asyncpgプール初期化 (Phase A1最適化)
+    await init_asyncpg_pool()
+
 
 async def get_db_session() -> AsyncSession:
     """データベースセッション取得（依存性注入用）"""
@@ -108,7 +141,9 @@ get_db = get_db_session
 
 
 async def close_db():
-    """データベース接続クローズ（アプリケーション終了時）"""
-    global engine
+    """データベース接続クローズ（アプリケーション終了時、Phase A1最適化）"""
+    global engine, asyncpg_pool
     if engine:
         await engine.dispose()
+    if asyncpg_pool:
+        await asyncpg_pool.close()
