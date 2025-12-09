@@ -45,6 +45,7 @@ import {
   MenuItem,
   ListItemIcon,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Visibility,
@@ -147,6 +148,10 @@ export default function AdminPage() {
   // コピー機能用のstate
   const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
+
+  // ★ 診断結果用のstate（新規追加）
+  const [diagnosisResults, setDiagnosisResults] = useState<any[]>([]);
+  const [diagnosisLoading, setDiagnosisLoading] = useState(false);
 
   // メニュー用のstate
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -315,10 +320,35 @@ export default function AdminPage() {
     link.click();
   };
 
-  // 詳細表示
-  const handleShowDetail = (submission: FormSubmissionData) => {
+  // 詳細表示（診断結果取得機能追加）
+  const handleShowDetail = async (submission: FormSubmissionData) => {
     setSelectedSubmission(submission);
     setDetailDialogOpen(true);
+
+    // ★ 診断結果取得を追加
+    setDiagnosisLoading(true);
+    setDiagnosisResults([]);
+
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8432';
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/form-submissions/${submission.id}/diagnosis`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setDiagnosisResults(data.diagnosis_results || []);
+        console.log('✅ 診断結果取得成功:', data.diagnosis_results?.length || 0, '件');
+      } else {
+        console.log('ℹ️ 診断結果なし（まだ実行されていない可能性）');
+        setDiagnosisResults([]);
+      }
+    } catch (error) {
+      console.error('❌ 診断結果取得エラー:', error);
+      setDiagnosisResults([]);
+    } finally {
+      setDiagnosisLoading(false);
+    }
   };
 
   // 業界別予約リンク取得
@@ -1595,6 +1625,83 @@ export default function AdminPage() {
                   )}
                 </Box>
               </Grid>
+
+              {/* ★ 新規追加: 診断結果セクション */}
+              <Grid size={{ xs: 12 }}>
+                <Divider sx={{ my: 3 }} />
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#374151' }}>
+                  🎯 診断結果タレント (30名)
+                </Typography>
+
+                {diagnosisLoading ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 3 }}>
+                    <CircularProgress size={20} />
+                    <Typography variant="body2" color="text.secondary">
+                      診断結果を読み込んでいます...
+                    </Typography>
+                  </Box>
+                ) : diagnosisResults.length > 0 ? (
+                  <TableContainer sx={{
+                    maxHeight: 400,
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    backgroundColor: '#fafafa'
+                  }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600, backgroundColor: '#f5f5f5' }}>順位</TableCell>
+                          <TableCell sx={{ fontWeight: 600, backgroundColor: '#f5f5f5' }}>タレント名</TableCell>
+                          <TableCell sx={{ fontWeight: 600, backgroundColor: '#f5f5f5' }}>カテゴリ</TableCell>
+                          <TableCell sx={{ fontWeight: 600, backgroundColor: '#f5f5f5' }}>スコア</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {diagnosisResults.map((talent) => (
+                          <TableRow
+                            key={talent.talent_account_id}
+                            sx={{
+                              '&:nth-of-type(odd)': { backgroundColor: '#fafbfc' },
+                              '&:hover': { backgroundColor: '#f1f5f9' }
+                            }}
+                          >
+                            <TableCell sx={{ fontWeight: 500 }}>
+                              {talent.ranking}位
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 500, color: '#374151' }}>
+                              {talent.talent_name}
+                            </TableCell>
+                            <TableCell sx={{ color: '#6b7280' }}>
+                              {talent.talent_category || '-'}
+                            </TableCell>
+                            <TableCell sx={{
+                              color: '#374151',
+                              fontFamily: 'monospace',
+                              fontWeight: 500
+                            }}>
+                              {talent.matching_score.toFixed(1)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Alert
+                    severity="info"
+                    sx={{
+                      mt: 2,
+                      borderRadius: 2,
+                      backgroundColor: '#e3f2fd',
+                      color: '#1565c0'
+                    }}
+                  >
+                    この送信に対する診断結果がまだ記録されていません
+                  </Alert>
+                )}
+              </Grid>
+
             </Grid>
           )}
         </DialogContent>

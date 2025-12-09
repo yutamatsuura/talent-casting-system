@@ -55,7 +55,7 @@ export function FormStep3({ formData, setFormData, errors }: FormStep3Props) {
           タレント起用を検討する一番の理由はなんですか？
         </FormLabel>
         <RadioGroup
-          value={isPresetReason ? formData.q3_2 : 'その他'}
+          value={formData.q3_2 || ''}
           onChange={(e) => handleRadioChange(e.target.value)}
         >
           {reasons.map((reason) => (
