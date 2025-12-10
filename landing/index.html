@@ -54,7 +54,7 @@
             height: 90vh;
             background-color: white;
             border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
 
@@ -74,7 +74,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         /* モバイルでの×ボタン位置調整 */
@@ -99,8 +99,13 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         /* Loading Spinner */
@@ -123,8 +128,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Responsive Design */
@@ -391,14 +401,14 @@
                         <div class="step-main-left-sub f-s">STEP 2</div>
                         <h2 class="d-block f-l c-blue-02 f-700">データ × AIで科学的に選定</h2>
                         <p class="f-s f-700">
-                            提携事務所数1,100社・登録タレント60,000名超のデータベースで、アスリートやインフルエンサーまで網羅。<br>
+                            提携事務所数1,000社・登録タレント60,000名超のデータベースで、アスリートやインフルエンサーまで網羅。<br>
                             客観データを駆使し、最適なキャスティングをご提案します。
                         </p>
                         <div class="step-main-left-list-02 flex">
                             <div class="step-main-left-list-02-sub">
                                 <span class="d-block f-s f-700">提携事務所数</span>
                                 <div class="num c-blue-02 f-700">
-                                    1,100<span>社超</span>
+                                    1,000<span>社超</span>
                                 </div>
                             </div>
                             <div class="step-main-left-list-02-sub">
@@ -512,13 +522,17 @@
                     <img src="img/img-slide-01.png" class="slide active" data-slide="1">
                     <img src="img/img-slide-02.png" class="slide" data-slide="2">
                     <img src="img/img-slide-03.png" class="slide" data-slide="3">
+                    <img src="img/img-slide-03.png" class="slide" data-slide="4">
+                    <img src="img/img-slide-03.png" class="slide" data-slide="5">
                 </div>
 
                 <!-- 右：テキストリンク -->
                 <div class="menu f-s">
-                    <div class="menu-item active" data-target="1">25年間の蓄積データ×AIの独自アルゴリズムを搭載</div>
-                    <div class="menu-item" data-target="2">60,000人以上の登録タレントから最適なタレントを提案</div>
-                    <div class="menu-item" data-target="3">人気度/知名度のみならず100項目以上のデータを分析</div>
+                    <div class="menu-item active" data-target="1">25年間の蓄積データ×AIの独自アルゴリズムを搭載​</div>
+                    <div class="menu-item" data-target="2">60,000人以上の登録タレントから最適なタレントを提案​</div>
+                    <div class="menu-item" data-target="3">人気度/知名度のみならず100項目以上のデータを分析​</div>
+                    <div class="menu-item" data-target="4">競合（同業界）のキャスティング動向も考慮​​</div>
+                    <div class="menu-item" data-target="5">経験豊富なアドバイザーの無料カウンセリングでデータを読み解く​</div>
                 </div>
             </div>
 
@@ -610,7 +624,7 @@
         let DIAGNOSIS_URL, RESULTS_URL;
 
         // 環境に応じてURLを動的に設定
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // 診断システムのURL設定
             const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -626,7 +640,7 @@
             const diagnosisButtons = document.querySelectorAll('a[href*="/diagnosis"]');
             diagnosisButtons.forEach(button => {
                 button.href = '#';
-                button.onclick = function(e) {
+                button.onclick = function (e) {
                     e.preventDefault();
                     openDiagnosisModal();
                     return false;
@@ -638,7 +652,7 @@
             console.log('結果ページURL:', RESULTS_URL);
 
             // ブラウザの戻るボタン対応
-            window.addEventListener('popstate', function(event) {
+            window.addEventListener('popstate', function (event) {
                 closeDiagnosisModal();
             });
         });
@@ -687,7 +701,7 @@
         }
 
         // 診断完了時のメッセージ受信
-        window.addEventListener('message', function(event) {
+        window.addEventListener('message', function (event) {
             console.log('📨 メッセージを受信:', event.data);
 
             // セキュリティチェック
@@ -737,14 +751,14 @@
         }
 
         // ESCキーでモーダルを閉じる
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 closeDiagnosisModal();
             }
         });
 
         // モーダル背景クリックで閉じる
-        window.addEventListener('click', function(event) {
+        window.addEventListener('click', function (event) {
             const modal = document.getElementById('diagnosisModal');
             if (event.target === modal) {
                 closeDiagnosisModal();
@@ -782,7 +796,7 @@
         }
 
         // ページ読み込み時にリセットパラメータをチェック
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('reset') === 'true') {
                 console.log('🔄 リセットパラメータ検出: 完全リセット実行');
