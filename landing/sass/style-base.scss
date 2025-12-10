@@ -321,7 +321,7 @@ body {
   animation: infinity-scroll-left 80s infinite linear 0.5s both;
 }
 .scroll-infinity__item {
-  width: calc(100vw / 6);
+  width: calc(150vw / 6);
   margin: 0 5px;
 }
 .scroll-infinity__item > img {
@@ -329,7 +329,7 @@ body {
 }
 /* 中段用にクラスを付ける */
 .scroll-infinity__list.middle {
-  margin-left: calc(-1 * (100% / 6 / 2)); /* サムネ幅6分の1の半分を左にずらす */
+  margin-left: calc(-1 * (150% / 6 / 2)); /* サムネ幅6分の1の半分を左にずらす */
 }
 
 .slider_parent {

@@ -320,15 +320,37 @@ export default function AdminPage() {
     link.click();
   };
 
-  // 診断結果CSVエクスポート（16項目フォーマット）
-  const handleExportDiagnosisCSV = (submission: FormSubmissionData | null) => {
-    if (!submission || diagnosisResults.length === 0) {
+  // 診断結果CSVエクスポート（リアルタイム分析によるGoogle Sheetsと同じデータ）
+  const handleExportDiagnosisCSV = async (submission: FormSubmissionData | null) => {
+    if (!submission) {
       setCopyMessage('エクスポート可能な診断結果がありません');
       setCopySnackbarOpen(true);
       return;
     }
 
     try {
+      setCopyMessage('診断結果を取得中...');
+      setCopySnackbarOpen(true);
+
+      // リアルタイム分析データを取得（Google Sheetsと同じロジック）
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8432';
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/form-submissions/${submission.id}/diagnosis-results-for-csv`
+      );
+
+      if (!response.ok) {
+        throw new Error(`CSVデータ取得失敗: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const csvExportData = data.csv_export_data || [];
+
+      if (csvExportData.length === 0) {
+        setCopyMessage('エクスポート可能な診断結果がありません');
+        setCopySnackbarOpen(true);
+        return;
+      }
+
       // Google Sheetsと同じ16項目ヘッダー
       const headers = [
         'タレント名',
@@ -349,24 +371,24 @@ export default function AdminPage() {
         '最終順位'
       ];
 
-      // 拡張されたAPIレスポンスデータに基づく16項目CSV変換
-      const csvData = diagnosisResults.map(talent => [
-        `"${talent.talent_name || ''}"`,
-        `"${talent.talent_category || ''}"`,
-        talent.vr_popularity || 0,           // VR人気度
-        talent.tpr_power_score || 0,         // TPRスコア
-        talent.base_power_score || 0,        // 従来スコア（基礎パワー得点）
-        talent.interesting_score || 0,
-        talent.clean_score || 0,
-        talent.unique_score || 0,
-        talent.trustworthy_score || 0,
-        talent.cute_score || 0,
-        talent.cool_score || 0,
-        talent.mature_score || 0,
-        talent.previous_ranking || 0,
-        talent.industry_image_score || 0,
-        talent.matching_score || 0,
-        talent.ranking || 0
+      // enhanced_matching_debugからのデータを使用（Google Sheetsと同じ）
+      const csvData = csvExportData.map((talent: any) => [
+        `"${talent['タレント名'] || ''}"`,
+        `"${talent['カテゴリー'] || ''}"`,
+        talent['VR人気度'] || 0,
+        talent['TPRスコア'] || 0,
+        talent['従来スコア'] || 0,
+        talent['おもしろさ'] || 0,
+        talent['清潔感'] || 0,
+        talent['個性的な'] || 0,
+        talent['信頼できる'] || 0,
+        talent['かわいい'] || 0,
+        talent['カッコいい'] || 0,
+        talent['大人の魅力'] || 0,
+        talent['従来順位'] || 0,
+        talent['業種別イメージ'] || 0,
+        talent['最終スコア'] || 0,
+        talent['最終順位'] || 0
       ].join(','));
 
       // CSVコンテンツ作成
@@ -387,7 +409,7 @@ export default function AdminPage() {
         `予算,"${submission.budget_range}"`,
         `起用目的,${submission.purpose || ''}`,
         `診断実行日時,${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`,
-        `タレント数,${diagnosisResults.length}件`
+        `タレント数,${csvExportData.length}件`
       ].join('\n');
 
       const finalCsvContent = csvContent + '\n' + metadata;

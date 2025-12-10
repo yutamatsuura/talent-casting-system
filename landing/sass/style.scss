@@ -108,7 +108,7 @@ main {
       &::before {
         display: block;
         content: "";
-        width: 65%;
+        width: 50%;
         height: 100%;
         background-color: rgba(229, 227, 227, 1);
         position: absolute;
@@ -119,7 +119,7 @@ main {
     }
     &-main {
       position: absolute;
-      left: 15%;
+      left: 10%;
       top: 15%;
       width: 85%;
       z-index: 10;
@@ -130,47 +130,71 @@ main {
       h1 {
         margin-bottom: 3.5%;
       }
-      .btn-shindan {
-        width: 280px;
-        position: relative;
-        p {
-          width: 180px;
-          padding: 0px 0;
-          text-align: center;
-          background-color: #ddfc55;
-          border-radius: 50px;
-          color: $c-blue-02;
-          position: absolute;
-          left: 50px;
-          top: -20px;
-        }
-        a {
-          display: block;
-          width: 100%;
-          padding: 10px 20px;
-          background-color: $c-blue-02;
-          color: #fff;
-          border: 2px solid $c-blue-02;
-          border-radius: 50px;
-          text-align: center;
-          &::before {
-            display: block;
-            font-family: "Line Awesome Brands", "Line Awesome Free";
-            content: "\f105";
-            position: absolute;
-            top: 50%;
-            right: 10%;
-            margin-top: -11px;
-            font-size: 12px;
-            line-height: 22px;
-            text-align: center;
+      &-shindan {
+        &-box {
+          width: 42.5%;
+          background-image: url("../img/bg-agent.png");
+          background-repeat: repeat-y;
+          padding: 1.5% 2.5%;
+          border-radius: 30px;
+          align-items: center;
+          &-left {
+            width: 35%;
           }
-        }
-        a:hover {
-          background-color: transparent;
-          color: $c-blue-02;
-          &::before {
-            color: $c-blue-02;
+          &-right {
+            width: 60%;
+            span {
+              padding: 2.5px 10px;
+              background-color: #ddfc55;
+            }
+            strong {
+              display: block;
+              color: #fff;
+              margin: 10px 0;
+            }
+            p {
+              color: #fff;
+            }
+            .btn {
+              margin-top: 20px;
+              width: 250px;
+              a {
+                display: block;
+                width: 100%;
+                padding: 10px 0px;
+                background-color: #fff;
+                color: $c-blue-02;
+                border: 2px solid #fff;
+                border-radius: 50px;
+                text-align: center;
+                font-weight: 700;
+                position: relative;
+                font-size: 14px;
+                transition: all 0.5s;
+                &::before {
+                  display: block;
+                  font-family: "Line Awesome Brands", "Line Awesome Free";
+                  content: "\f061";
+                  position: absolute;
+                  top: 50%;
+                  right: 10%;
+                  margin-top: -11px;
+                  font-size: 14px;
+                  line-height: 22px;
+                  text-align: center;
+                }
+              }
+              a:hover {
+                /*
+            background-color: transparent;
+            color: #fff;
+            &::before {
+              color: #fff;
+            }
+              */
+                transform: scale(1.1, 1.1);
+              }
+            }
           }
         }
       }
@@ -321,11 +345,11 @@ main {
         }
         .btn {
           margin-top: 40px;
-          width: 240px;
+          width: 300px;
           a {
             display: block;
             width: 100%;
-            padding: 10px 20px;
+            padding: 20px 0px;
             background-color: #fff;
             color: $c-blue-02;
             border: 2px solid #fff;
@@ -333,25 +357,30 @@ main {
             text-align: center;
             font-weight: 700;
             position: relative;
+            font-size: 20px;
+            transition: all 0.5s;
             &::before {
               display: block;
               font-family: "Line Awesome Brands", "Line Awesome Free";
-              content: "\f105";
+              content: "\f061";
               position: absolute;
               top: 50%;
               right: 10%;
               margin-top: -11px;
-              font-size: 12px;
+              font-size: 20px;
               line-height: 22px;
               text-align: center;
             }
           }
           a:hover {
+            /*
             background-color: transparent;
             color: #fff;
             &::before {
               color: #fff;
             }
+              */
+            transform: scale(1.1, 1.1);
           }
         }
       }
@@ -731,8 +760,9 @@ footer {
           margin-bottom: 5%;
         }
         h1 {
-          margin-bottom: 50px;
+          margin-bottom: 20px;
         }
+        /*
         .btn-shindan {
           width: 100%;
           p {
@@ -742,6 +772,72 @@ footer {
           }
           a {
             padding: 20px 0;
+          }
+        }
+          */
+        &-shindan {
+          &-box {
+            width: 100%;
+            max-width: 100%;
+            background-image: url("../img/bg-agent.png");
+            background-repeat: repeat-y;
+            padding: 5%;
+            border-radius: 30px;
+            align-items: center;
+            &-left {
+              width: 100%;
+              margin: 0 10% 5% 10%;
+            }
+            &-right {
+              width: 100%;
+              span {
+                padding: 2.5px 10px;
+                background-color: #ddfc55;
+              }
+              strong {
+                display: block;
+                color: #fff;
+                margin: 10px 0;
+              }
+              p {
+                color: #fff;
+              }
+              .btn {
+                margin-top: 5%;
+                width: 100%;
+                a {
+                  display: block;
+                  width: 100%;
+                  padding: 10px 20px;
+                  background-color: #fff;
+                  color: $c-blue-02;
+                  border: 2px solid #fff;
+                  border-radius: 50px;
+                  text-align: center;
+                  font-weight: 700;
+                  position: relative;
+                  &::before {
+                    display: block;
+                    font-family: "Line Awesome Brands", "Line Awesome Free";
+                    content: "\f061";
+                    position: absolute;
+                    top: 50%;
+                    right: 10%;
+                    margin-top: -11px;
+                    font-size: 12px;
+                    line-height: 22px;
+                    text-align: center;
+                  }
+                }
+                a:hover {
+                  background-color: transparent;
+                  color: #fff;
+                  &::before {
+                    color: #fff;
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -927,7 +1023,7 @@ footer {
               &::before {
                 display: block;
                 font-family: "Line Awesome Brands", "Line Awesome Free";
-                content: "\f105";
+                content: "\f061";
                 position: absolute;
                 top: 50%;
                 right: 10%;

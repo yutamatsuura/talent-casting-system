@@ -46,25 +46,56 @@ $(function () {
   }
 
   const menuItems = document.querySelectorAll(".menu-item");
-  const slides = document.querySelectorAll(".slide");
+  const slides = document.querySelectorAll(".tablet .slide");
 
-  menuItems.forEach((item) => {
+  let currentIndex = 0;
+  let autoPlayTimer = null;
+  let intervalTime = 3000; // ★ 切り替え秒数（ミリ秒）ここを変更する
+
+  // スライド切り替え処理
+  function showSlide(index) {
+    const target = slides[index].dataset.slide;
+
+    // メニュー active
+    menuItems.forEach((m) => m.classList.remove("active"));
+    document
+      .querySelector(`.menu-item[data-target="${target}"]`)
+      .classList.add("active");
+
+    // スライド active
+    slides.forEach((s) => s.classList.remove("active"));
+    slides[index].classList.add("active");
+
+    currentIndex = index;
+  }
+
+  // 自動再生スタート
+  function startAutoPlay() {
+    stopAutoPlay(); // 二重起動防止
+    autoPlayTimer = setInterval(() => {
+      let next = (currentIndex + 1) % slides.length;
+      showSlide(next);
+    }, intervalTime);
+  }
+
+  // 停止
+  function stopAutoPlay() {
+    if (autoPlayTimer) {
+      clearInterval(autoPlayTimer);
+    }
+  }
+
+  // メニュークリック
+  menuItems.forEach((item, idx) => {
     item.addEventListener("click", () => {
-      const target = item.dataset.target;
-
-      // メニューの active 切替
-      menuItems.forEach((i) => i.classList.remove("active"));
-      item.classList.add("active");
-
-      // スライドの active 切替
-      slides.forEach((slide) => {
-        slide.classList.remove("active");
-        if (slide.dataset.slide === target) {
-          slide.classList.add("active");
-        }
-      });
+      showSlide(idx);
+      startAutoPlay(); // クリック後も自動再生続行
     });
   });
+
+  // 初期表示とスタート
+  showSlide(0);
+  startAutoPlay();
 
   initNagareSlick();
   $(window).on("resize", initNagareSlick);

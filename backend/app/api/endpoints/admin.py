@@ -6,7 +6,7 @@ from sqlalchemy import select, text
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-from app.db.connection import get_db_session
+from app.db.connection import get_db_session, get_asyncpg_connection
 from app.models import FormSubmission, ButtonClick, DiagnosisResult
 from pydantic import BaseModel
 
@@ -432,10 +432,20 @@ async def get_submission_diagnosis(
                 basic_score = basic_score_result.fetchone()
 
                 if basic_score:
+                    vr_pop = float(basic_score.vr_popularity) if basic_score.vr_popularity else 0
+                    tpr_score = float(basic_score.tpr_power_score) if basic_score.tpr_power_score else 0
+                    # base_power_scoreが正しく保存されていない場合は、リアルタイム計算する
+                    if basic_score.base_power_score and basic_score.base_power_score != basic_score.vr_popularity:
+                        # データベースに正しい値が保存されている場合はそれを使用
+                        base_power = round(float(basic_score.base_power_score), 2)
+                    else:
+                        # データベースの値が不正な場合は、仕様通りリアルタイム計算
+                        base_power = round((vr_pop + tpr_score) / 2, 2) if (vr_pop or tpr_score) else 0
+
                     result_data.update({
-                        "vr_popularity": float(basic_score.vr_popularity) if basic_score.vr_popularity else 0,
-                        "tpr_power_score": float(basic_score.tpr_power_score) if basic_score.tpr_power_score else 0,
-                        "base_power_score": float(basic_score.base_power_score) if basic_score.base_power_score else 0,
+                        "vr_popularity": vr_pop,
+                        "tpr_power_score": tpr_score,
+                        "base_power_score": round(base_power, 2),
                     })
                 else:
                     result_data.update({
@@ -444,17 +454,21 @@ async def get_submission_diagnosis(
                         "base_power_score": 0,
                     })
 
-                # イメージスコア（シンプル版）
+                # イメージスコアとその他詳細データを取得
+                additional_data = await get_additional_talent_data_for_csv(
+                    db, result.talent_account_id, submission.target_segment
+                )
+
                 result_data.update({
-                    "interesting_score": 0,
-                    "clean_score": 0,
-                    "unique_score": 0,
-                    "trustworthy_score": 0,
-                    "cute_score": 0,
-                    "cool_score": 0,
-                    "mature_score": 0,
-                    "previous_ranking": 0,
-                    "industry_image_score": 0,
+                    "interesting_score": additional_data.get("image_funny", 0),
+                    "clean_score": additional_data.get("image_clean", 0),
+                    "unique_score": additional_data.get("image_unique", 0),
+                    "trustworthy_score": additional_data.get("image_trustworthy", 0),
+                    "cute_score": additional_data.get("image_cute", 0),
+                    "cool_score": additional_data.get("image_cool", 0),
+                    "mature_score": additional_data.get("image_mature", 0),
+                    "previous_ranking": additional_data.get("previous_ranking", 0),
+                    "industry_image_score": round(float(result.image_adjustment), 1) if result.image_adjustment else 0,
                 })
 
             except Exception as e:
@@ -508,7 +522,7 @@ async def get_submission_diagnosis(
 )
 async def get_diagnosis_results_for_csv(
     submission_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db_session)
 ):
     """
     Google Sheetsエクスポートと同じデータソース（enhanced_matching_debug）を使用
@@ -527,21 +541,18 @@ async def get_diagnosis_results_for_csv(
             )
 
         # enhanced_matching_debugと同じロジックでデータを取得
-        from app.services.enhanced_matching_debug import get_detailed_talent_data_for_export
+        from app.services.enhanced_matching_debug import EnhancedMatchingDebug
 
-        # マッチング条件を構築
-        input_conditions = {
-            "industry": submission.industry,
-            "target_segments": [submission.target_segment],
-            "budget": submission.budget_range,
-            "purpose": submission.usage_purpose,
-            "company_name": submission.company_name,
-            "person_in_charge": submission.person_in_charge,
-            "session_id": submission.session_id
-        }
+        # マッチングデバッガーを初期化
+        debug_matcher = EnhancedMatchingDebug()
 
         # Google Sheetsと同じ詳細データを取得
-        detailed_results = await get_detailed_talent_data_for_export(input_conditions)
+        detailed_results = await debug_matcher.generate_complete_talent_analysis(
+            industry=submission.industry,
+            target_segments=[submission.target_segment],
+            purpose=submission.usage_purpose,
+            budget=submission.budget_range
+        )
 
         return {
             "form_submission_id": submission_id,
@@ -565,3 +576,97 @@ async def get_diagnosis_results_for_csv(
             status_code=500,
             detail="CSV用診断結果取得中にエラーが発生しました"
         )
+
+
+async def get_additional_talent_data_for_csv(
+    db: AsyncSession,
+    account_id: int,
+    target_segment: str
+) -> Dict[str, Any]:
+    """
+    CSVエクスポート用のタレント追加データ取得
+    enhanced_matching_debug.pyと同じロジックでtalent_imagesデータを取得
+    """
+    try:
+        # target_segment_idを取得
+        segment_query = text("SELECT target_segment_id FROM target_segments WHERE segment_name = :segment_name")
+        segment_result = await db.execute(segment_query, {"segment_name": target_segment})
+        segment_row = segment_result.fetchone()
+
+        if not segment_row:
+            print(f"⚠️ ターゲットセグメント '{target_segment}' が見つかりません")
+            return {}
+
+        target_segment_id = segment_row.target_segment_id
+
+        # メインクエリ: VR/TPRデータとイメージスコアを一括取得
+        query = text("""
+            SELECT
+                ma.account_id,
+                ma.act_genre,
+                ts.vr_popularity,
+                ts.tpr_power_score,
+                ti.image_funny,
+                ti.image_clean,
+                ti.image_unique,
+                ti.image_trustworthy,
+                ti.image_cute,
+                ti.image_cool,
+                ti.image_mature
+            FROM m_account ma
+            LEFT JOIN talent_scores ts ON ma.account_id = ts.account_id
+                AND ts.target_segment_id = :target_segment_id
+            LEFT JOIN talent_images ti ON ma.account_id = ti.account_id
+                AND ti.target_segment_id = :target_segment_id
+            WHERE ma.account_id = :account_id
+        """)
+
+        result = await db.execute(query, {
+            "target_segment_id": target_segment_id,
+            "account_id": account_id
+        })
+
+        row = result.fetchone()
+
+        if not row:
+            print(f"⚠️ アカウントID {account_id} のデータが見つかりません")
+            return {}
+
+        # 従来順位計算用の基礎パワー得点を取得
+        conventional_score = ((row.vr_popularity or 0) + (row.tpr_power_score or 0)) / 2
+
+        # 従来順位を計算（簡易版：同じtarget_segmentでの従来スコア順位）
+        ranking_query = text("""
+            SELECT COUNT(*) + 1 as ranking
+            FROM talent_scores ts
+            WHERE ts.target_segment_id = :target_segment_id
+            AND ((ts.vr_popularity + ts.tpr_power_score) / 2) > :conventional_score
+        """)
+
+        ranking_result = await db.execute(ranking_query, {
+            "target_segment_id": target_segment_id,
+            "conventional_score": conventional_score
+        })
+
+        ranking_row = ranking_result.fetchone()
+        previous_ranking = ranking_row.ranking if ranking_row else 0
+
+        return {
+            "act_genre": row.act_genre,
+            "vr_popularity": round(float(row.vr_popularity or 0), 1),
+            "tpr_power_score": round(float(row.tpr_power_score or 0), 1),
+            "image_funny": round(float(row.image_funny or 0), 1),
+            "image_clean": round(float(row.image_clean or 0), 1),
+            "image_unique": round(float(row.image_unique or 0), 1),
+            "image_trustworthy": round(float(row.image_trustworthy or 0), 1),
+            "image_cute": round(float(row.image_cute or 0), 1),
+            "image_cool": round(float(row.image_cool or 0), 1),
+            "image_mature": round(float(row.image_mature or 0), 1),
+            "previous_ranking": previous_ranking
+        }
+
+    except Exception as e:
+        print(f"❌ タレント追加データ取得エラー (account_id: {account_id}): {e}")
+        return {}
+
+
