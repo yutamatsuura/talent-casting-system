@@ -221,8 +221,8 @@ body {
     line-height: 42px;
   }
   .f-xl {
-    font-size: 44px;
-    line-height: 60px;
+    font-size: 40px;
+    line-height: 56px;
   }
   .f-h1 {
     font-size: 52px;
@@ -388,7 +388,7 @@ body {
 }
 
 .scroll-infinity__item {
-  width: 16.6666666667vw;
+  width: 25vw;
   margin: 0 5px;
 }
 
@@ -398,7 +398,7 @@ body {
 
 /* 中段用にクラスを付ける */
 .scroll-infinity__list.middle {
-  margin-left: -8.3333333333%; /* サムネ幅6分の1の半分を左にずらす */
+  margin-left: -12.5%; /* サムネ幅6分の1の半分を左にずらす */
 }
 
 .slider_parent {

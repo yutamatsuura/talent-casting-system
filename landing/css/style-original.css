@@ -109,7 +109,7 @@ main .fv {
 }
 main .fv-bg {
   position: relative;
-  padding: 40px 0 30px 0;
+  padding: 0;
 }
 main .fv-bg .slide-01,
 main .fv-bg .slide-02 {
@@ -141,35 +141,55 @@ main .fv-main strong {
 main .fv-main h1 {
   margin-bottom: 3.5%;
 }
-main .fv-main .btn-shindan {
-  width: 350px;
-  position: relative;
+main .fv-main-shindan-box {
+  width: 42.5%;
+  background-image: url("../img/bg-agent.png");
+  background-repeat: repeat-y;
+  padding: 1.5% 2.5%;
+  border-radius: 30px;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+      -ms-flex-align: center;
+          align-items: center;
 }
-main .fv-main .btn-shindan p {
-  width: 200px;
-  padding: 0px 0;
-  text-align: center;
+main .fv-main-shindan-box-left {
+  width: 35%;
+}
+main .fv-main-shindan-box-right {
+  width: 60%;
+}
+main .fv-main-shindan-box-right span {
+  padding: 2.5px 10px;
   background-color: #ddfc55;
-  border-radius: 50px;
-  color: #235fb2;
-  position: absolute;
-  left: 75px;
-  top: -20px;
-  z-index: 2;
 }
-main .fv-main .btn-shindan a {
-  z-index: 1;
+main .fv-main-shindan-box-right strong {
+  display: block;
+  color: #fff;
+  margin: 10px 0;
+}
+main .fv-main-shindan-box-right p {
+  color: #fff;
+}
+main .fv-main-shindan-box-right .btn {
+  margin-top: 20px;
+  width: 250px;
+}
+main .fv-main-shindan-box-right .btn a {
   display: block;
   width: 100%;
-  padding: 20px 0px;
-  background-color: #235fb2;
-  color: #fff;
-  border: 2px solid #235fb2;
+  padding: 10px 0px;
+  background-color: #fff;
+  color: #235fb2;
+  border: 2px solid #fff;
   border-radius: 50px;
   text-align: center;
-  font-size: 20px;
+  font-weight: 700;
+  position: relative;
+  font-size: 14px;
+  -webkit-transition: all 0.5s;
+  transition: all 0.5s;
 }
-main .fv-main .btn-shindan a::before {
+main .fv-main-shindan-box-right .btn a::before {
   display: block;
   font-family: "Line Awesome Brands", "Line Awesome Free";
   content: "\f061";
@@ -177,20 +197,18 @@ main .fv-main .btn-shindan a::before {
   top: 50%;
   right: 10%;
   margin-top: -11px;
-  font-size: 20px;
+  font-size: 14px;
   line-height: 22px;
   text-align: center;
-  -webkit-transition: all 0.5s;
-  transition: all 0.5s;
 }
-main .fv-main .btn-shindan a:hover {
+main .fv-main-shindan-box-right .btn a:hover {
   /*
   background-color: transparent;
-  color: $c-blue-02;
-            &::before {
-    color: $c-blue-02;
+  color: #fff;
+  &::before {
+    color: #fff;
   }
-  */
+    */
   -webkit-transform: scale(1.1, 1.1);
           transform: scale(1.1, 1.1);
 }
@@ -425,6 +443,9 @@ main .step-main-left-sub {
 main .step-main-left h2 {
   margin: 20px 0;
 }
+main .step-main-left h2 i {
+  padding-right: 10px;
+}
 main .step-main-left p {
   padding-bottom: 20px;
   display: block;
@@ -443,7 +464,7 @@ main .step-main-left-list ul {
   margin-bottom: 10px;
 }
 main .step-main-left-list ul li:nth-child(1) {
-  width: 120px;
+  width: 140px;
   padding: 2px 0;
   background-color: #235fb2;
   border-radius: 10px;
@@ -452,7 +473,7 @@ main .step-main-left-list ul li:nth-child(1) {
   font-weight: 700;
 }
 main .step-main-left-list ul li:nth-child(2) {
-  width: 330px;
+  width: 310px;
 }
 main .step-main-left-list ul:last-of-type {
   margin-bottom: 0;
@@ -485,10 +506,10 @@ main .step-main-left-list-03 span {
   margin-bottom: 10px;
 }
 main .step-main-left-list-03 ul li:nth-child(1) {
-  width: 120px;
+  width: 140px;
 }
 main .step-main-left-list-03 ul li:nth-child(2) {
-  width: 530px;
+  width: 510px;
 }
 main .step-main-right {
   width: 30%;
@@ -604,6 +625,7 @@ main .question-box ul .faq-content {
   display: none;
   color: #235fb2;
   font-weight: 700;
+  padding: 0 40px;
 }
 main .question-box ul:last-child {
   margin-bottom: 0;
@@ -773,23 +795,91 @@ footer .footer-main-img {
     position: static;
     margin-bottom: 5%;
     margin-top: 5%;
+    /*
+    .btn-shindan {
+      width: 100%;
+      p {
+        padding: 5px 0;
+        width: 70%;
+        left: 15%;
+      }
+      a {
+        padding: 20px 0;
+      }
+    }
+      */
   }
   main .fv-main strong {
     margin-bottom: 5%;
   }
   main .fv-main h1 {
-    margin-bottom: 50px;
+    margin-bottom: 20px;
   }
-  main .fv-main .btn-shindan {
+  main .fv-main-shindan-box {
+    width: 100%;
+    max-width: 100%;
+    background-image: url("../img/bg-agent.png");
+    background-repeat: repeat-y;
+    padding: 5%;
+    border-radius: 30px;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+        -ms-flex-align: center;
+            align-items: center;
+  }
+  main .fv-main-shindan-box-left {
+    width: 100%;
+    margin: 0 10% 5% 10%;
+  }
+  main .fv-main-shindan-box-right {
     width: 100%;
   }
-  main .fv-main .btn-shindan p {
-    padding: 5px 0;
-    width: 70%;
-    left: 15%;
+  main .fv-main-shindan-box-right span {
+    padding: 2.5px 10px;
+    background-color: #ddfc55;
   }
-  main .fv-main .btn-shindan a {
-    padding: 20px 0;
+  main .fv-main-shindan-box-right strong {
+    display: block;
+    color: #fff;
+    margin: 10px 0;
+  }
+  main .fv-main-shindan-box-right p {
+    color: #fff;
+  }
+  main .fv-main-shindan-box-right .btn {
+    margin-top: 5%;
+    width: 100%;
+  }
+  main .fv-main-shindan-box-right .btn a {
+    display: block;
+    width: 100%;
+    padding: 10px 20px;
+    background-color: #fff;
+    color: #235fb2;
+    border: 2px solid #fff;
+    border-radius: 50px;
+    text-align: center;
+    font-weight: 700;
+    position: relative;
+  }
+  main .fv-main-shindan-box-right .btn a::before {
+    display: block;
+    font-family: "Line Awesome Brands", "Line Awesome Free";
+    content: "\f061";
+    position: absolute;
+    top: 50%;
+    right: 10%;
+    margin-top: -11px;
+    font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+  }
+  main .fv-main-shindan-box-right .btn a:hover {
+    background-color: transparent;
+    color: #fff;
+  }
+  main .fv-main-shindan-box-right .btn a:hover::before {
+    color: #fff;
   }
   main .result-title {
     width: 90%;
@@ -1005,7 +1095,9 @@ footer .footer-main-img {
   }
   main .step {
     padding: 10% 0;
-    background-color: #f5f5f5;
+  }
+  main .step-title {
+    margin-bottom: 5%;
   }
   main .step-main {
     width: 90%;
@@ -1198,15 +1290,20 @@ footer .footer-main-img {
     background-color: #235fb2;
     color: #fff;
     text-align: center;
-    display: inline-block;
+    display: block;
     border-radius: 50%;
-    margin-right: 10px;
+    margin-right: 0px;
+    position: absolute;
+    left: 0;
+    top: -2.5px;
   }
   main .question-box ul .plus:nth-child(1) {
     position: relative;
+    padding: 0 45px;
   }
   main .question-box ul .faq-content {
     display: none;
+    padding: 0;
   }
   main .question-box ul:last-child {
     margin-bottom: 0;
