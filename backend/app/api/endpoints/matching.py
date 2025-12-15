@@ -542,17 +542,25 @@ async def execute_matching_logic(
         # STEP 1-5: 5段階マッチングロジック統合クエリ（アルコール業界年齢フィルタ対応）
         query = """
         WITH step0_budget_filter AS (
-            -- STEP 0: 予算フィルタリング（選択した予算上限以下 + m_talent_act未登録も通過） + アルコール業界年齢フィルタリング
+            -- STEP 0: 予算フィルタリング（MIN/MAX条件チェック + 未登録除外） + アルコール業界年齢フィルタリング
             SELECT DISTINCT ma.account_id, ma.name_full_for_matching as name, ma.last_name_kana, ma.act_genre
             FROM m_account ma
             LEFT JOIN m_talent_act mta ON ma.account_id = mta.account_id
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
+              AND mta.account_id IS NOT NULL  -- 未登録タレントを除外
               AND (
-                -- m_talent_actデータがない場合（未登録）も予算制限なしで通過
-                mta.account_id IS NULL
-                -- または予算データがあって上限以下の場合
-                OR mta.money_max_one_year IS NULL
-                OR ($1 = 'Infinity'::float8 OR mta.money_max_one_year <= $1)
+                -- パターン1: 両方設定済み（MIN有・MAX有）→ ユーザー予算がMIN以上で通過
+                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NOT NULL
+                 AND $1 >= mta.money_min_one_year)
+                OR
+                -- パターン2: MIN有・MAX無 → ユーザー予算がMIN以上で通過
+                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NULL
+                 AND $1 >= mta.money_min_one_year)
+                OR
+                -- パターン3: MIN無・MAX有 → ユーザー予算がMAX以上で通過
+                (mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NOT NULL
+                 AND $1 >= mta.money_max_one_year)
+                -- パターン4: 両方NULL → 除外（条件なし）
               ) AND (
                 -- アルコール業界の場合のみ25歳以上フィルタ適用（$4で制御）
                 $4 = false OR (
