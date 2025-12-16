@@ -351,45 +351,22 @@ export default function AdminPage() {
         return;
       }
 
-      // Google Sheetsと同じ16項目ヘッダー
-      const headers = [
-        'タレント名',
-        'カテゴリー',
-        'VR人気度',
-        'TPRスコア',
-        '従来スコア',
-        'おもしろさ',
-        '清潔感',
-        '個性的な',
-        '信頼できる',
-        'かわいい',
-        'カッコいい',
-        '大人の魅力',
-        '従来順位',
-        '業種別イメージ',
-        '最終スコア',
-        '最終順位'
-      ];
+      // APIから返される実際の列を動的に取得
+      const firstTalent = csvExportData[0];
+      const headers = Object.keys(firstTalent);
 
-      // enhanced_matching_debugからのデータを使用（Google Sheetsと同じ）
-      const csvData = csvExportData.map((talent: any) => [
-        `"${talent['タレント名'] || ''}"`,
-        `"${talent['カテゴリー'] || ''}"`,
-        talent['VR人気度'] || 0,
-        talent['TPRスコア'] || 0,
-        talent['従来スコア'] || 0,
-        talent['おもしろさ'] || 0,
-        talent['清潔感'] || 0,
-        talent['個性的な'] || 0,
-        talent['信頼できる'] || 0,
-        talent['かわいい'] || 0,
-        talent['カッコいい'] || 0,
-        talent['大人の魅力'] || 0,
-        talent['従来順位'] || 0,
-        talent['業種別イメージ'] || 0,
-        talent['最終スコア'] || 0,
-        talent['最終順位'] || 0
-      ].join(','));
+      // APIから返される列順序に従って動的にCSVデータを生成
+      const csvData = csvExportData.map((talent: any) =>
+        headers.map(header => {
+          const value = talent[header];
+          // 文字列データは引用符で囲む
+          if (typeof value === 'string') {
+            return `"${value || ''}"`;
+          }
+          // 数値データはそのまま（0の場合も含む）
+          return value || 0;
+        }).join(',')
+      );
 
       // CSVコンテンツ作成
       const csvContent = [
