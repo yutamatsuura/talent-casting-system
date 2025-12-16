@@ -549,18 +549,17 @@ async def execute_matching_logic(
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
               AND mta.account_id IS NOT NULL  -- 未登録タレントを除外
               AND (
-                -- パターン1: 両方設定済み（MIN有・MAX有）→ タレントMINがユーザー予算以下で通過
-                -- ※ DBの値は「万円」単位のため、10,000を掛けて「円」に変換
+                -- パターン1: 両方設定済み（MIN有・MAX有）→ ユーザー予算がMIN以上で通過
                 (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NOT NULL
-                 AND mta.money_min_one_year * 10000 <= $1)
+                 AND $1 >= mta.money_min_one_year)
                 OR
-                -- パターン2: MIN有・MAX無 → タレントMINがユーザー予算以下で通過
+                -- パターン2: MIN有・MAX無 → ユーザー予算がMIN以上で通過
                 (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NULL
-                 AND mta.money_min_one_year * 10000 <= $1)
+                 AND $1 >= mta.money_min_one_year)
                 OR
-                -- パターン3: MIN無・MAX有 → タレントMAXがユーザー予算以下で通過
+                -- パターン3: MIN無・MAX有 → ユーザー予算がMAX以上で通過
                 (mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NOT NULL
-                 AND mta.money_max_one_year * 10000 <= $1)
+                 AND $1 >= mta.money_max_one_year)
                 -- パターン4: 両方NULL → 除外（条件なし）
               ) AND (
                 -- アルコール業界の場合のみ25歳以上フィルタ適用（$4で制御）
