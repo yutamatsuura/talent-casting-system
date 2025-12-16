@@ -8,7 +8,7 @@
   "devCommand": "npm run dev",
   "env": {
     "NODE_ENV": "production",
-    "NEXT_PUBLIC_API_BASE_URL": "https://talent-casting-api-123456-uc.a.run.app"
+    "NEXT_PUBLIC_API_BASE_URL": "https://talent-casting-backend-fixed-392592761218.asia-northeast1.run.app"
   },
   "headers": [
     {
