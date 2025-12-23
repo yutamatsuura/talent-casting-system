@@ -15,17 +15,19 @@ import {
 } from '@mui/material';
 import { ChevronLeft, ChevronRight, Home } from '@mui/icons-material';
 import { FormData, STORAGE_KEY, TOTAL_FORM_STEPS, TalentResult } from '@/types';
-import { FormStep1 } from './FormSteps/FormStep1';
+import { FormStepTerms } from './FormSteps/FormStepTerms';
 import { FormStep2 } from './FormSteps/FormStep2';
 import { FormStep3 } from './FormSteps/FormStep3';
 import { FormStep4 } from './FormSteps/FormStep4';
 import { FormStep5 } from './FormSteps/FormStep5';
 import { FormStep6 } from './FormSteps/FormStep6';
+import { FormStep7 } from './FormSteps/FormStep7';
 import { AnalysisLoadingScreen } from './shared/AnalysisLoadingScreen';
 import { ResultsPage } from './Results/ResultsPage';
 import { callMatchingApi } from '@/lib/api';
 
 const initialFormData: FormData = {
+  termsAgreed: false,
   q2: '',
   q3: '',
   q3_2: '',
@@ -40,12 +42,13 @@ const initialFormData: FormData = {
 };
 
 const stepLabels = [
+  '利用規約',
   '業界選択',
   '訴求対象',
   '起用目的',
   '予算設定',
   '企業情報入力',
-  'プライバシー同意',
+  'プライバシーポリシー',
 ];
 
 export function TalentCastingForm() {
@@ -61,6 +64,43 @@ export function TalentCastingForm() {
 
   // LocalStorageからデータ復元
   useEffect(() => {
+    // URLパラメータでリセット指示があるかチェック
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldReset = urlParams.get('reset') === 'true';
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔍 URL検査:', {
+        fullUrl: window.location.href,
+        searchParams: window.location.search,
+        resetParam: urlParams.get('reset'),
+        shouldReset: shouldReset
+      });
+    }
+
+    if (shouldReset) {
+      // リセット指示がある場合はLocalStorageをクリアして最初から
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem('talentResults');
+      sessionStorage.removeItem('talentFormData');
+      sessionStorage.removeItem('talentApiError');
+
+      // 状態も初期値にリセット
+      setFormData(initialFormData);
+      setCurrentStep(1);
+      setErrors({});
+
+      // URLからresetパラメータを削除（履歴に残さないように）
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('reset');
+      window.history.replaceState({}, '', newUrl.toString());
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🔄 フォームを完全にリセットしました（URLパラメータ指示）');
+        console.log('🧹 URLからresetパラメータを削除しました');
+      }
+      return;
+    }
+
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -74,10 +114,17 @@ export function TalentCastingForm() {
         };
         setFormData(merged);
         setCurrentStep(parsed.currentStep || 1);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('💾 保存されたデータを復元しました:', { step: parsed.currentStep });
+        }
       } catch (e) {
         if (process.env.NODE_ENV !== 'production') {
           console.error('Failed to parse saved data', e);
         }
+      }
+    } else {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('📝 保存されたデータがありません、最初からスタート');
       }
     }
   }, []);
@@ -91,24 +138,30 @@ export function TalentCastingForm() {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      if (!formData.q2) newErrors.q2 = '業界を選択してください';
+      if (!formData.termsAgreed) {
+        newErrors.termsAgreed = '利用規約への同意が必要です';
+      }
     }
 
     if (step === 2) {
+      if (!formData.q2) newErrors.q2 = '業界を選択してください';
+    }
+
+    if (step === 3) {
       if (!formData.q3 || formData.q3.trim() === '') {
         newErrors.q3 = '訴求対象を1つ選択してください';
       }
     }
 
-    if (step === 3) {
+    if (step === 4) {
       if (!formData.q3_2) newErrors.q3_2 = '目的を選択してください';
     }
 
-    if (step === 4) {
+    if (step === 5) {
       if (!formData.q3_3) newErrors.q3_3 = '予算を選択してください';
     }
 
-    if (step === 5) {
+    if (step === 6) {
       if (!formData.q4) newErrors.q4 = '会社名を入力してください';
       if (!formData.q5) newErrors.q5 = '担当者名を入力してください';
       if (!formData.q6) newErrors.q6 = 'メールアドレスを入力してください';
@@ -122,13 +175,18 @@ export function TalentCastingForm() {
         newErrors.q7 = '有効な携帯電話番号を入力してください（例：090-1234-5678）';
       }
 
-      // ジャンル希望の整合性チェック（任意フィールドなので警告のみ）
+      // ジャンル希望の必須チェック
+      if (!formData.q7_2) {
+        newErrors.q7_2 = 'タレントジャンルの希望有無を選択してください';
+      }
+
+      // ジャンル具体選択の整合性チェック
       if (formData.q7_2 === '希望ジャンルあり' && (!Array.isArray(formData.q7_2_genres) || formData.q7_2_genres.length === 0)) {
         newErrors.q7_2_genres = '希望ジャンルを選択するか、「希望ジャンルなし」を選択してください';
       }
     }
 
-    if (step === 6) {
+    if (step === 7) {
       if (!formData.privacyAgreed) {
         newErrors.privacyAgreed = 'プライバシーポリシーへの同意が必要です';
       }
@@ -407,7 +465,7 @@ export function TalentCastingForm() {
       <Card elevation={3}>
         <CardContent sx={{ minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
           {currentStep === 1 && (
-            <FormStep1 formData={formData} setFormData={setFormData} errors={errors} />
+            <FormStepTerms formData={formData} setFormData={setFormData} errors={errors} />
           )}
           {currentStep === 2 && (
             <FormStep2 formData={formData} setFormData={setFormData} errors={errors} />
@@ -423,6 +481,9 @@ export function TalentCastingForm() {
           )}
           {currentStep === 6 && (
             <FormStep6 formData={formData} setFormData={setFormData} errors={errors} />
+          )}
+          {currentStep === 7 && (
+            <FormStep7 formData={formData} setFormData={setFormData} errors={errors} />
           )}
         </CardContent>
 

@@ -2,15 +2,16 @@
 
 import {
   Box,
-  Radio,
   FormControl,
   FormControlLabel,
-  RadioGroup,
   FormHelperText,
   FormLabel,
+  Radio,
+  RadioGroup,
   Typography,
+  Paper,
 } from '@mui/material';
-import { People } from '@mui/icons-material';
+import { Business } from '@mui/icons-material';
 import { FormData } from '@/types';
 
 interface FormStep2Props {
@@ -19,61 +20,70 @@ interface FormStep2Props {
   errors: Record<string, string>;
 }
 
-const targetOptions = [
-  '男性12-19歳',
-  '女性12-19歳',
-  '男性20-34歳',
-  '女性20-34歳',
-  '男性35-49歳',
-  '女性35-49歳',
-  '男性50-69歳',
-  '女性50-69歳',
+const industries = [
+  '食品',
+  '菓子・氷菓',
+  '乳製品',
+  '清涼飲料水',
+  'アルコール飲料',
+  'フードサービス',
+  '医薬品・医療・健康食品',
+  '化粧品・ヘアケア・オーラルケア',
+  'トイレタリー',
+  '自動車関連',
+  '家電',
+  '通信・IT',
+  'ゲーム・エンターテイメント・アプリ',
+  '流通・通販',
+  'ファッション',
+  '貴金属',
+  '金融・不動産',
+  'エネルギー・輸送・交通',
+  '教育・出版・公共団体',
+  '観光',
 ];
 
 export function FormStep2({ formData, setFormData, errors }: FormStep2Props) {
-  const handleTargetChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, q3: event.target.value });
-  };
-
   return (
     <Box sx={{ py: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-        <People sx={{ mr: 1.5, fontSize: '2rem', color: 'primary.main' }} />
+        <Business sx={{ mr: 1.5, fontSize: '2rem', color: 'primary.main' }} />
         <Typography variant="h5" fontWeight={700} color="text.primary">
-          訴求対象
+          業界選択
         </Typography>
       </Box>
-      <FormControl error={!!errors.q3} fullWidth>
+      <FormControl error={!!errors.q2} fullWidth>
         <FormLabel sx={{ mb: 0.5, fontSize: '1.1rem', fontWeight: 600 }}>
-          貴社の商品サービスの主要なターゲットはどの層ですか？
+          貴社の業界は次のうちどれにあてはまりますか？
         </FormLabel>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          ※1つのターゲット層を選択してください
+          ※業界に最適なタレントをご提案するために使用します
         </Typography>
-        <RadioGroup value={formData.q3} onChange={handleTargetChange}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-              gap: 1,
-            }}
+        <Paper
+          variant="outlined"
+          sx={{
+            maxHeight: 400,
+            overflowY: 'auto',
+            p: 2,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <RadioGroup
+            value={formData.q2}
+            onChange={(e) => setFormData({ ...formData, q2: e.target.value })}
           >
-            {targetOptions.map((option) => (
+            {industries.map((industry) => (
               <FormControlLabel
-                key={option}
-                value={option}
+                key={industry}
+                value={industry}
                 control={<Radio />}
-                label={option}
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
+                label={industry}
+                sx={{ mb: 0.5 }}
               />
             ))}
-          </Box>
-        </RadioGroup>
-        {errors.q3 && <FormHelperText>{errors.q3}</FormHelperText>}
+          </RadioGroup>
+        </Paper>
+        {errors.q2 && <FormHelperText>{errors.q2}</FormHelperText>}
       </FormControl>
     </Box>
   );

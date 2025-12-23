@@ -49,6 +49,13 @@ cors_origins = []
 if settings.cors_origin:
     cors_origins.append(settings.cors_origin)
 
+# 開発環境のフロントエンドドメインを追加
+development_origins = [
+    "http://localhost:3248",  # 管理画面・診断システム
+    "http://localhost:3247",  # ランディングページ
+]
+cors_origins.extend(development_origins)
+
 # 本番フロントエンドドメインを追加
 production_origins = [
     "https://talent-casting-diagnosis.vercel.app",
@@ -59,7 +66,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # PUT/DELETE削除（不要）
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 管理画面のCRUD操作に必要
     allow_headers=[
         "Content-Type",
         "Authorization",

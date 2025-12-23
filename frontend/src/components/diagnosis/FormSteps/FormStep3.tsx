@@ -2,16 +2,15 @@
 
 import {
   Box,
+  Radio,
   FormControl,
   FormControlLabel,
+  RadioGroup,
   FormHelperText,
   FormLabel,
-  Radio,
-  RadioGroup,
-  TextField,
   Typography,
 } from '@mui/material';
-import { Lightbulb } from '@mui/icons-material';
+import { People } from '@mui/icons-material';
 import { FormData } from '@/types';
 
 interface FormStep3Props {
@@ -20,72 +19,61 @@ interface FormStep3Props {
   errors: Record<string, string>;
 }
 
-const reasons = [
-  '商品サービスの知名度アップ',
-  '商品サービスの売上拡大',
-  '商品サービスの特長訴求のため',
-  '企業知名度アップ',
-  '企業好感度アップ',
-  '採用効果アップ',
-  'その他',
+const targetOptions = [
+  '男性12-19歳',
+  '女性12-19歳',
+  '男性20-34歳',
+  '女性20-34歳',
+  '男性35-49歳',
+  '女性35-49歳',
+  '男性50-69歳',
+  '女性50-69歳',
 ];
 
 export function FormStep3({ formData, setFormData, errors }: FormStep3Props) {
-  const isOtherSelected = formData.q3_2 === 'その他' || (formData.q3_2 && !reasons.slice(0, -1).includes(formData.q3_2));
-  const isPresetReason = reasons.slice(0, -1).includes(formData.q3_2);
-
-  const handleRadioChange = (value: string) => {
-    setFormData({ ...formData, q3_2: value });
-  };
-
-  const handleCustomTextChange = (text: string) => {
-    setFormData({ ...formData, q3_2: text || 'その他' });
+  const handleTargetChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, q3: event.target.value });
   };
 
   return (
     <Box sx={{ py: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-        <Lightbulb sx={{ mr: 1.5, fontSize: '2rem', color: 'primary.main' }} />
+        <People sx={{ mr: 1.5, fontSize: '2rem', color: 'primary.main' }} />
         <Typography variant="h5" fontWeight={700} color="text.primary">
-          起用目的
+          訴求対象
         </Typography>
       </Box>
-      <FormControl error={!!errors.q3_2} fullWidth>
-        <FormLabel sx={{ mb: 1.5, fontSize: '1.1rem', fontWeight: 600 }}>
-          タレント起用を検討する一番の理由はなんですか？
+      <FormControl error={!!errors.q3} fullWidth>
+        <FormLabel sx={{ mb: 0.5, fontSize: '1.1rem', fontWeight: 600 }}>
+          貴社の商品サービスの主要なターゲットはどの層ですか？
         </FormLabel>
-        <RadioGroup
-          value={formData.q3_2 || ''}
-          onChange={(e) => handleRadioChange(e.target.value)}
-        >
-          {reasons.map((reason) => (
-            <FormControlLabel
-              key={reason}
-              value={reason}
-              control={<Radio />}
-              label={reason}
-              sx={{
-                p: 1,
-                borderRadius: 2,
-                '&:hover': { bgcolor: 'action.hover' },
-                transition: 'background-color 0.2s',
-              }}
-            />
-          ))}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          ※1つのターゲット層を選択してください
+        </Typography>
+        <RadioGroup value={formData.q3} onChange={handleTargetChange}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gap: 1,
+            }}
+          >
+            {targetOptions.map((option) => (
+              <FormControlLabel
+                key={option}
+                value={option}
+                control={<Radio />}
+                label={option}
+                sx={{
+                  p: 1,
+                  borderRadius: 2,
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              />
+            ))}
+          </Box>
         </RadioGroup>
-        {isOtherSelected && (
-          <TextField
-            fullWidth
-            placeholder="具体的な理由をお聞かせください"
-            value={isPresetReason ? '' : formData.q3_2.replace('その他', '').trim()}
-            onChange={(e) => handleCustomTextChange(e.target.value)}
-            sx={{ mt: 2 }}
-            variant="outlined"
-            multiline
-            rows={3}
-          />
-        )}
-        {errors.q3_2 && <FormHelperText>{errors.q3_2}</FormHelperText>}
+        {errors.q3 && <FormHelperText>{errors.q3}</FormHelperText>}
       </FormControl>
     </Box>
   );

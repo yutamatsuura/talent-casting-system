@@ -13,9 +13,9 @@ class MatchingFormData(BaseModel):
     budget: str = Field(..., description="予算区分")
     company_name: str = Field(..., min_length=1, max_length=255, description="企業名")
     email: str = Field(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", description="メールアドレス")
-    contact_name: Optional[str] = Field(None, max_length=255, description="担当者名")
-    phone: Optional[str] = Field(None, max_length=50, description="電話番号")
-    genre_preference: Optional[str] = Field(None, max_length=50, description="ジャンル希望の有無")
+    contact_name: str = Field(..., min_length=1, max_length=255, description="担当者名")
+    phone: str = Field(..., min_length=1, max_length=50, description="電話番号")
+    genre_preference: str = Field(..., min_length=1, max_length=50, description="ジャンル希望の有無")
     preferred_genres: Optional[List[str]] = Field(None, description="希望するジャンルリスト")
     session_id: Optional[str] = Field(None, max_length=100, description="セッションID")
 

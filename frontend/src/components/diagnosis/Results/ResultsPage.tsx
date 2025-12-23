@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -11,11 +11,10 @@ import {
   Typography,
   Alert,
   Chip,
-  Pagination,
 } from '@mui/material';
 import { CalendarMonth, Refresh, Error as ErrorIcon, AccountCircle, TipsAndUpdates, Download, Person } from '@mui/icons-material';
 import { FormData, TalentResult, API_ENDPOINTS, ButtonClickData, ButtonClickResponse } from '@/types';
-import { generateDetailedPersonalizedMessage, generateSimplePersonalizedMessage } from '@/lib/personalized-messages';
+// パーソナライズメッセージは固定の共通メッセージに変更済み
 import { TalentDetailModal } from './TalentDetailModal';
 
 interface ResultsPageProps {
@@ -30,14 +29,6 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
   // API結果を使用（エラー時の対応含む）
   const talents = apiResults;
 
-  // ページネーション状態管理
-  const [currentPage, setCurrentPage] = useState(1);
-  const talentsPerPage = 9;
-  const totalPages = Math.ceil(talents.length / talentsPerPage);
-
-  // タレントセクションのref
-  const talentsSectionRef = useRef<HTMLDivElement>(null);
-
   // タレント詳細モーダル状態管理
   const [selectedTalent, setSelectedTalent] = useState<TalentResult | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,126 +36,40 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
   // 業界別予約リンク状態管理
   const [bookingUrl, setBookingUrl] = useState<string>('https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm');
 
-  // 現在のページに表示するタレントを計算
-  const startIndex = (currentPage - 1) * talentsPerPage;
-  const endIndex = startIndex + talentsPerPage;
-  const currentTalents = talents.slice(startIndex, endIndex);
-
-  // ページ変更ハンドラ（ページネーション時のスクロール処理も含む）
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setCurrentPage(value);
-
-    // ページネーション時のみスクロール
-    if (talentsSectionRef.current) {
-      talentsSectionRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
-  };
-
-  // フォーム選択値をメッセージテンプレートキーに変換するマッピング関数
-  const mapIndustryToTemplateKey = (formIndustry: string): string => {
-    const industryMapping: Record<string, string> = {
-      // 美容・化粧品関連
-      '化粧品・ヘアケア・オーラルケア': '美容・化粧品',
-      'トイレタリー': '美容・化粧品',
-
-      // 食品・飲料関連
-      '食品': '食品・飲料',
-      '菓子・氷菓': '食品・飲料',
-      '乳製品': '食品・飲料',
-      '清涼飲料水': '食品・飲料',
-      'アルコール飲料': '食品・飲料',
-      'フードサービス': '食品・飲料',
-
-      // 医療・ヘルスケア関連
-      '医薬品・医療・健康食品': '医療・ヘルスケア',
-
-      // 自動車・モビリティー関連
-      '自動車関連': '自動車・モビリティー',
-
-      // IT・テクノロジー関連
-      '通信・IT': 'IT・テクノロジー',
-      'ゲーム・エンターテイメント・アプリ': 'IT・テクノロジー',
-      '家電': 'IT・テクノロジー',
-
-      // ファッション・アパレル関連
-      'ファッション': 'ファッション・アパレル',
-      '貴金属': 'ファッション・アパレル',
-
-      // 金融・不動産関連
-      '金融・不動産': '金融・保険',
-
-      // 流通・サービス関連
-      '流通・通販': 'その他',
-      'エネルギー・輸送・交通': 'その他',
-
-      // 教育関連
-      '教育・出版・公共団体': '教育',
-
-      // 旅行・レジャー関連
-      '観光': '旅行・レジャー'
-    };
-
-    return industryMapping[formIndustry] || 'その他';
-  };
+  // 旧マッピング関数は固定メッセージ導入により削除
 
   const generatePersonalizedMessage = (): string => {
     // URLパラメータデコード後のフィールド名と従来のフィールド名の両方をサポート
     const formDataAny = formData as any;
     const companyName = formData.q4 || formDataAny.company_name || '貴社';
-    const originalIndustry = formData.q2 || formDataAny.industry;
-    const purpose = formData.q3_2 || formDataAny.purpose;
+    const contactName = formData.q5 || formDataAny.contact_name || '';
 
-    // フォーム選択値をテンプレートキーに変換
-    const mappedIndustry = mapIndustryToTemplateKey(originalIndustry || '');
-
-    // デバッグログ: パーソナライゼーションデータの確認（本番環境では無効化）
-    console.log('🎭 パーソナライゼーションデータ確認:');
-    console.log('  - companyName (final):', companyName);
-    console.log('  - originalIndustry (final):', originalIndustry);
-    console.log('  - mappedIndustry:', mappedIndustry);
-    console.log('  - purpose (final):', purpose);
-    console.log('  - 旧フィールド名 - q4/q2/q3_2:', formData.q4, '/', formData.q2, '/', formData.q3_2);
-    console.log('  - 新フィールド名 - company_name/industry/purpose:', formDataAny.company_name, '/', formDataAny.industry, '/', formDataAny.purpose);
-
-    // 業界と目的が両方選択されている場合は詳細なメッセージを生成
-    if (originalIndustry && purpose) {
-      console.log('🔄 詳細メッセージ生成を試行中...', {
-        originalIndustry,
-        mappedIndustry,
-        purpose,
-        companyName
-      });
-
-      try {
-        const result = generateDetailedPersonalizedMessage({
-          companyName,
-          industry: mappedIndustry,
-          purpose
-        });
-
-        console.log('✅ 詳細パーソナライズメッセージ生成成功:', result);
-        return result;
-      } catch (error) {
-        console.warn('❌ 詳細メッセージ生成に失敗、フォールバックを使用:', error);
-      }
+    // 社名と担当者名の組み合わせを生成
+    let greeting = '';
+    if (contactName) {
+      greeting = `${companyName} ${contactName}様`;
     } else {
-      console.log('⚠️ 条件不足で詳細メッセージをスキップ:');
-      console.log('  - originalIndustry exists:', !!originalIndustry, '| value:', originalIndustry);
-      console.log('  - purpose exists:', !!purpose, '| value:', purpose);
+      greeting = `${companyName}様`;
     }
 
-    // フォールバック用のシンプルメッセージ
-    const fallbackMessage = generateSimplePersonalizedMessage({
-      companyName,
-      industry: mappedIndustry || '業界',
-      purpose: purpose || 'ブランド価値向上'
-    });
+    // 固定の共通メッセージを返却
+    const commonMessage = `${greeting}、無料タレントキャスティング診断をご利用いただきありがとうございます。
+入力いただいた条件をもとに、貴社に最適なタレント 30名を選定いたしました。今なら期間限定で、専任アドバイザーによる無料カウンセリングを実施中です。ご希望の場合はページ下部のボタンよりご予約ください。
+貴社に最適な戦略とより詳細なデータをご用意してお待ちしております。
 
-    console.log('📝 フォールバックメッセージ使用:', fallbackMessage);
-    return fallbackMessage;
+※本診断内容は参考情報であり、特定のタレントの出演、起用、契約の成立を保証するものではありません。`;
+
+    // デバッグログ
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📝 共通メッセージ生成:', {
+        companyName,
+        contactName,
+        greeting,
+        message: commonMessage
+      });
+    }
+
+    return commonMessage;
   };
 
   // ボタンクリック追跡関数
@@ -322,7 +227,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                 </Typography>
               </Alert>
 
-              <Box ref={talentsSectionRef} data-talents-section>
+              <Box data-talents-section>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>
                   おすすめタレント
                 </Typography>
@@ -343,7 +248,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                       fontSize: { xs: '0.75rem', sm: '0.875rem' }
                     }}
                   >
-                    合計11,000名中、上位30名から厳選してご提案
+                    合計60,000名中、上位30名から厳選してご提案
                   </Typography>
                   <Typography
                     variant="body2"
@@ -353,7 +258,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                       textAlign: { xs: 'left', sm: 'right' }
                     }}
                   >
-                    {currentPage}ページ目 ({startIndex + 1}〜{Math.min(endIndex, talents.length)}件目 / {talents.length}件)
+                    全{talents.length}名を表示
                   </Typography>
                 </Box>
 
@@ -366,7 +271,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                     mt: 2,
                   }}
                 >
-                  {currentTalents.map((talent, index) => {
+                  {talents.map((talent, index) => {
                     const isRecommended = talent.is_recommended || false;
                     const isCompetitorUsed = talent.is_currently_in_cm || false;
 
@@ -427,7 +332,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                               )}
                               {isCompetitorUsed && (
                                 <Chip
-                                  label="競合使用中"
+                                  label="競合契約中"
                                   sx={{
                                     bgcolor: '#f44336',
                                     color: 'white',
@@ -557,23 +462,6 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                   })}
                 </Box>
 
-                {/* ページネーション */}
-                {totalPages > 1 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                    <Pagination
-                      count={totalPages}
-                      page={currentPage}
-                      onChange={handlePageChange}
-                      color="primary"
-                      size="large"
-                      sx={{
-                        '& .MuiPagination-ul': {
-                          justifyContent: 'center',
-                        }
-                      }}
-                    />
-                  </Box>
-                )}
               </Box>
 
               {/* 特別特典セクション */}
@@ -628,33 +516,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                       gap: { xs: 2, md: 4 },
                     }}
                   >
-                    {/* 左側：無料カウンセリング */}
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
-                      <Box
-                        sx={{
-                          width: { xs: 48, md: 64 },
-                          height: { xs: 48, md: 64 },
-                          borderRadius: '50%',
-                          bgcolor: '#e3f2fd',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}
-                      >
-                        <CalendarMonth sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
-                      </Box>
-                      <Box>
-                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
-                          専任コンサルタントによる<br />無料カウンセリング相談(60分)
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                          業界経験豊富なコンサルタントが、貴社の課題に合わせた最適な戦略をご提案します
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* 右側：タレント詳細情報 */}
+                    {/* 左側：簡易版タレントリストダウンロード */}
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
                       <Box
                         sx={{
@@ -672,10 +534,45 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                       </Box>
                       <Box>
                         <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
-                          貴社に最適な<br />タレント詳細情報提供
+                          簡易版タレントリストダウンロード
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+                          ご入力いただいたメールアドレス宛にダウンロード用リンクをお送りいたしました。
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                          11,000名のデータベースから、貴社の目的・予算に最適なタレント情報を詳しくご提供
+                          診断結果をまとめたリストをダウンロードしていただけます。
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* 右側：専任アドバイザーによる無料カウンセリング */}
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
+                      <Box
+                        sx={{
+                          width: { xs: 48, md: 64 },
+                          height: { xs: 48, md: 64 },
+                          borderRadius: '50%',
+                          bgcolor: '#e3f2fd',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}
+                      >
+                        <CalendarMonth sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
+                          専任アドバイザーによる無料カウンセリング(60分)
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+                          経験豊富なアドバイザーに無料でご相談いただけます。
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+                          より詳細な情報のご提供も可能です。
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                          ご希望の場合は以下のボタンよりご予約ください。
                         </Typography>
                       </Box>
                     </Box>

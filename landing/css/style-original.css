@@ -153,10 +153,10 @@ main .fv-main-shindan-box {
           align-items: center;
 }
 main .fv-main-shindan-box-left {
-  width: 35%;
+  width: 32.5%;
 }
 main .fv-main-shindan-box-right {
-  width: 60%;
+  width: 62.5%;
 }
 main .fv-main-shindan-box-right span {
   padding: 2.5px 10px;
@@ -506,10 +506,13 @@ main .step-main-left-list-03 span {
   margin-bottom: 10px;
 }
 main .step-main-left-list-03 ul li:nth-child(1) {
-  width: 140px;
-}
-main .step-main-left-list-03 ul li:nth-child(2) {
-  width: 510px;
+  width: 100%;
+  text-indent: -1em;
+  padding: 0 0 0 1em;
+  background-color: transparent;
+  text-align: left;
+  color: #333;
+  font-weight: normal;
 }
 main .step-main-right {
   width: 30%;
@@ -842,9 +845,13 @@ footer .footer-main-img {
     display: block;
     color: #fff;
     margin: 10px 0;
+    font-size: 6vw;
+    line-height: 8vw;
   }
   main .fv-main-shindan-box-right p {
     color: #fff;
+    font-size: 4.2vw;
+    line-height: 5.6vw;
   }
   main .fv-main-shindan-box-right .btn {
     margin-top: 5%;
@@ -861,6 +868,7 @@ footer .footer-main-img {
     text-align: center;
     font-weight: 700;
     position: relative;
+    font-size: 20px;
   }
   main .fv-main-shindan-box-right .btn a::before {
     display: block;
@@ -875,11 +883,15 @@ footer .footer-main-img {
     text-align: center;
   }
   main .fv-main-shindan-box-right .btn a:hover {
+    /*
     background-color: transparent;
     color: #fff;
-  }
-  main .fv-main-shindan-box-right .btn a:hover::before {
-    color: #fff;
+    &::before {
+      color: #fff;
+    }
+      */
+    -webkit-transform: scale(1, 1);
+            transform: scale(1, 1);
   }
   main .result-title {
     width: 90%;
@@ -1190,9 +1202,12 @@ footer .footer-main-img {
   }
   main .step-main-left-list-03 ul li:nth-child(1) {
     width: 100%;
-  }
-  main .step-main-left-list-03 ul li:nth-child(2) {
-    width: 100%;
+    text-indent: -1em;
+    padding: 0 0 0 1em;
+    background-color: transparent;
+    text-align: left;
+    color: #333;
+    font-weight: normal;
   }
   main .step-main-right {
     width: 100%;

@@ -34,10 +34,10 @@ const steps: AnalysisStep[] = [
   {
     id: 1,
     title: '業界データベース検索',
-    description: '2,500件のタレントデータを分析',
+    description: '60,000名のタレントデータを分析',
     duration: 1500,
     processingText: '処理中',
-    maxCount: 2500,
+    maxCount: 60000,
   },
   {
     id: 2,
@@ -318,7 +318,7 @@ export function AnalysisLoadingScreen({ onComplete }: { onComplete: () => void }
             </Typography>
           </Box>
           <Typography variant="caption" sx={{ opacity: 0.9 }}>
-            20,000以上のデータポイントから最適なタレントを選定
+            60,000名のタレントデータから最適なタレントを選定
           </Typography>
         </Paper>
       </Box>

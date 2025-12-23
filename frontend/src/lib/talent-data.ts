@@ -879,7 +879,7 @@ export const premiumTalents: Talent[] = [
       cmHistory: [],
       cost: {
         tvCm: {
-          range: "競合使用中",
+          range: "競合契約中",
           duration: "",
           shootingDays: "",
         },

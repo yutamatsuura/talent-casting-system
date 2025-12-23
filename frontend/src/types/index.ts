@@ -3,8 +3,9 @@
  * requirements.mdのFormData型とTalentResult型を実装
  */
 
-// フォームデータ型（6段階入力フォーム）
+// フォームデータ型（7段階入力フォーム）
 export interface FormData {
+  termsAgreed?: boolean; // 利用規約同意（必須）
   q2: string; // 業種選択（必須）
   q3: string; // ターゲット層選択（必須、単一選択）
   q3_2: string; // タレント起用理由（必須）
@@ -283,7 +284,7 @@ export interface Talent {
 export const STORAGE_KEY = 'talent-casting-form-data' as const;
 
 // フォームステップ定数
-export const TOTAL_FORM_STEPS = 6 as const;
+export const TOTAL_FORM_STEPS = 7 as const;
 
 // 業種コード定数
 export const INDUSTRY_CODES = {
