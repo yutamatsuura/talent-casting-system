@@ -64,6 +64,7 @@ class TalentResult(BaseModel):
     name: str = Field(..., description="タレント名（name_full_for_matching）")
     kana: Optional[str] = Field(None, description="タレント名（カナ）")
     category: Optional[str] = Field(None, description="カテゴリ（act_genre）")
+    company_name: Optional[str] = Field(None, description="事務所名（m_account.company_name）")
     matching_score: float = Field(..., ge=0.0, le=100.0, description="マッチングスコア（0-100）")
     ranking: int = Field(..., ge=1, le=30, description="ランキング（1-30）")
     base_power_score: Optional[float] = Field(None, description="基礎パワー得点")

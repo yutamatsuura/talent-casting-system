@@ -38,6 +38,7 @@ class TalentDetailResponse(BaseModel):
     category: Optional[str] = Field(None, description="タレントカテゴリ（act_genre）")
     age: Optional[int] = Field(None, description="年齢（birthdayから計算）")
     company_name: Optional[str] = Field(None, description="所属事務所名")
+    birthplace: Optional[str] = Field(None, description="出身地（都道府県名）")
     introduction: Optional[str] = Field(None, description="自己紹介文（現在未実装）")
     cm_history: List[CMHistoryDetail] = Field(default_factory=list, description="CM出演履歴一覧")
     base_power_score: Optional[float] = Field(None, description="基礎パワー得点（STEP1スコア）")
@@ -54,6 +55,7 @@ class TalentDetailResponse(BaseModel):
                 "category": "女優",
                 "age": 29,
                 "company_name": "研音",
+                "birthplace": "長崎県",
                 "introduction": None,
                 "cm_history": [
                     {

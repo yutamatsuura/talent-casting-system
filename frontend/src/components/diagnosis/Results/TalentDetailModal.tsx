@@ -1,6 +1,6 @@
 'use client';
 
-// 詳細データ取得を行わないため、React hooksは不要
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,21 +11,66 @@ import {
   Chip,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Star,
-  CalendarMonth,
   Person,
+  Business,
+  Cake,
+  LocationOn,
 } from '@mui/icons-material';
-import { TalentDetailModalProps } from '@/types';
+import { TalentDetailModalProps, TalentDetailInfo } from '@/types';
+import { fetchTalentDetails } from '@/lib/api';
 
 export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUrl }: TalentDetailModalProps) {
-  // CM履歴を表示しないため、状態管理・API呼び出し・関数は不要
+  const [talentDetails, setTalentDetails] = useState<TalentDetailInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // レスポンシブデザイン用
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // モーダルが開かれた際にタレント詳細情報を取得
+  useEffect(() => {
+    if (isOpen && talent) {
+      const loadTalentDetails = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          console.log('🔍 タレント詳細取得開始:', talent.account_id);
+          const details = await fetchTalentDetails(talent.account_id);
+          console.log('✅ タレント詳細取得成功:', details);
+
+          // マッチングスコアとランキングを元の結果から保持
+          const detailsWithScore = {
+            ...details,
+            matching_score: talent.matching_score,
+            ranking: talent.ranking
+          };
+
+          setTalentDetails(detailsWithScore);
+        } catch (err) {
+          console.error('❌ タレント詳細取得失敗:', err);
+          setError('タレント詳細情報の取得に失敗しました');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadTalentDetails();
+    }
+  }, [isOpen, talent]);
+
+  // モーダルが閉じられた際にデータをリセット
+  useEffect(() => {
+    if (!isOpen) {
+      setTalentDetails(null);
+      setError(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen || !talent) return null;
 
@@ -33,7 +78,7 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
     <Dialog
       open={isOpen}
       onClose={onClose}
-      maxWidth="lg"
+      maxWidth="sm"
       fullWidth
       fullScreen={isMobile}
       PaperProps={{
@@ -41,11 +86,12 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
           borderRadius: { xs: 0, md: 3 },
           maxHeight: { xs: '100vh', md: '90vh' },
           margin: { xs: 0, md: 'auto' },
+          maxWidth: { xs: '100%', md: 480 },
         }
       }}
     >
       <DialogContent sx={{ p: 0 }}>
-        {/* ヘッダーセクション */}
+        {/* ヘッダーセクション - 縦型コンパクトレイアウト */}
         <Box sx={{
           position: 'sticky',
           top: 0,
@@ -53,7 +99,8 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
           bgcolor: 'white',
           borderBottom: '1px solid #e0e0e0',
           p: { xs: 2, md: 3 },
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          textAlign: 'center'
         }}>
           <IconButton
             onClick={onClose}
@@ -68,99 +115,118 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
             <CloseIcon />
           </IconButton>
 
+          {/* タレント画像 */}
+          <Box
+            sx={{
+              width: { xs: 80, md: 96 },
+              height: { xs: 80, md: 96 },
+              borderRadius: 3,
+              bgcolor: 'linear-gradient(to bottom right, #f3f4f6, #e5e7eb)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid #e0e0e0',
+              mx: 'auto',
+              mb: 2
+            }}
+          >
+            <Person sx={{ fontSize: { xs: 40, md: 48 }, color: '#9ca3af' }} />
+          </Box>
+
+          {/* タレント名とふりがな */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" fontWeight="bold" color="#2c3e50" sx={{
+              fontSize: { xs: '1.5rem', md: '1.8rem' },
+              mb: 0.5
+            }}>
+              {talentDetails ? talentDetails.name : talent.name}
+            </Typography>
+            {(talentDetails?.kana || talent.kana) && (
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
+                ({talentDetails?.kana || talent.kana})
+              </Typography>
+            )}
+          </Box>
+
+          {/* カテゴリ */}
+          {(talentDetails?.category || talent.category) && (
+            <Box sx={{ mb: 3 }}>
+              <Chip
+                label={talentDetails?.category || talent.category}
+                sx={{
+                  bgcolor: '#e3f2fd',
+                  color: '#1976d2',
+                  fontSize: '0.9rem',
+                  height: 32
+                }}
+              />
+            </Box>
+          )}
+
+          {/* 詳細情報（事務所名、年齢、出身地、マッチング度）*/}
           <Box sx={{
             display: 'flex',
-            alignItems: 'flex-start',
-            flexDirection: { xs: 'column', md: 'row' },
-            gap: { xs: 2, md: 3 },
-            mr: { xs: 5, md: 6 }
+            flexDirection: 'column',
+            gap: 1.5,
+            alignItems: 'center',
+            maxWidth: 300,
+            mx: 'auto'
           }}>
-            {/* タレント画像 */}
-            <Box
-              sx={{
-                width: { xs: 80, md: 96 },
-                height: { xs: 80, md: 96 },
-                borderRadius: 3,
-                bgcolor: 'linear-gradient(to bottom right, #f3f4f6, #e5e7eb)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                border: '2px solid #e0e0e0',
-                alignSelf: { xs: 'center', md: 'flex-start' }
-              }}
-            >
-              <Person sx={{ fontSize: { xs: 40, md: 48 }, color: '#9ca3af' }} />
-            </Box>
-
-            {/* タレント基本情報 */}
-            <Box sx={{ flex: 1, minWidth: 0, textAlign: { xs: 'center', md: 'left' } }}>
-              <Box sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: { xs: 'center', md: 'baseline' },
-                gap: { xs: 0.5, md: 2 },
-                mb: 1
-              }}>
-                <Typography variant="h4" fontWeight="bold" color="#2c3e50" sx={{
-                  fontSize: { xs: '1.5rem', md: '2rem' }
-                }}>
-                  {talent.name}
+            {/* 事務所名 */}
+            {(talentDetails?.company_name || talent.company_name) && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Business sx={{ fontSize: 20, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.95rem' }}>
+                  {talentDetails?.company_name || talent.company_name}
                 </Typography>
-                {talent.kana && (
-                  <Typography variant="body2" color="text.secondary">
-                    ({talent.kana})
-                  </Typography>
-                )}
               </Box>
+            )}
 
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' },
-                gap: 2,
-                mb: 2,
-                flexWrap: 'wrap'
-              }}>
-                <Chip
-                  label={talent.category}
-                  sx={{ bgcolor: '#e3f2fd', color: '#1976d2' }}
-                />
+            {/* 年齢 */}
+            {talentDetails?.age && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Cake sx={{ fontSize: 20, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.95rem' }}>
+                  {talentDetails.age}歳
+                </Typography>
               </Box>
-            </Box>
+            )}
 
-            {/* マッチングスコア表示 */}
+            {/* 出身地 */}
+            {talentDetails?.birthplace && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LocationOn sx={{ fontSize: 20, color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.95rem' }}>
+                  {talentDetails.birthplace}出身
+                </Typography>
+              </Box>
+            )}
+
+            {/* マッチングスコア */}
             <Box sx={{
-              flexShrink: 0,
-              alignSelf: { xs: 'center', md: 'flex-start' },
-              width: { xs: '100%', md: 'auto' },
-              maxWidth: { xs: 180, md: 'none' }
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              bgcolor: 'linear-gradient(135deg, #e3f2fd 0%, #e8f0ff 100%)',
+              p: 2,
+              borderRadius: 2,
+              border: '1px solid #1976d2',
+              mt: 1
             }}>
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: { xs: 1.5, md: 2 },
-                bgcolor: 'linear-gradient(135deg, #e3f2fd 0%, #e8f0ff 100%)',
-                p: { xs: 1.5, md: 2 },
-                borderRadius: 2,
-                border: '1px solid #1976d2',
-                minWidth: { xs: 'auto', md: 120 }
-              }}>
-                <Star sx={{ color: '#1976d2', fontSize: { xs: 24, md: 28 } }} />
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" fontWeight="bold" color="#1976d2" sx={{
-                    fontSize: { xs: '1.5rem', md: '2rem' },
-                    lineHeight: 1
-                  }}>
-                    {talent.matching_score}%
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight="medium" sx={{
-                    fontSize: { xs: '0.7rem', md: '0.75rem' }
-                  }}>
-                    マッチング度
-                  </Typography>
-                </Box>
+              <Star sx={{ color: '#1976d2', fontSize: 24 }} />
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h5" fontWeight="bold" color="#1976d2" sx={{
+                  fontSize: '1.5rem',
+                  lineHeight: 1
+                }}>
+                  {talentDetails ? talentDetails.matching_score : talent.matching_score}%
+                </Typography>
+                <Typography variant="caption" color="text.secondary" fontWeight="medium" sx={{
+                  fontSize: '0.75rem'
+                }}>
+                  マッチング度
+                </Typography>
               </Box>
             </Box>
           </Box>
@@ -169,48 +235,52 @@ export function TalentDetailModal({ talent, isOpen, onClose, formData, bookingUr
         {/* メインコンテンツ */}
         <Box sx={{
           p: { xs: 2, md: 3 },
-          maxHeight: { xs: 'calc(100vh - 200px)', md: 'calc(90vh - 200px)' },
-          overflowY: 'auto',
-          pb: { xs: 10, md: 3 } // モバイルでは下部の固定ボタン分のスペースを確保
+          minHeight: 'auto'
         }}>
-          {/* CM履歴非表示のため、ローディング不要 - CTAボタンのみ表示 */}
-          <Box sx={{ minHeight: 200 }}>
-            {/* CTAボタンセクション */}
+          {/* ローディング状態 */}
+          {isLoading && (
             <Box sx={{
-              mt: { xs: 3, md: 4 },
-              position: { xs: 'sticky', md: 'static' },
-              bottom: { xs: 0, md: 'auto' },
-              bgcolor: { xs: 'white', md: 'transparent' },
-              p: { xs: 2, md: 0 },
-              borderTop: { xs: '1px solid #e0e0e0', md: 'none' },
-              mx: { xs: -2, md: 0 },
-              zIndex: { xs: 10, md: 'auto' }
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 4,
+              gap: 2
             }}>
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                startIcon={<CalendarMonth />}
-                onClick={() =>
-                  window.open(
-                    bookingUrl,
-                    '_blank'
-                  )
-                }
-                sx={{
-                  py: { xs: 2, md: 2.5 },
-                  fontSize: { xs: '1rem', md: '1.1rem' },
-                  fontWeight: 'bold',
-                  background: 'linear-gradient(90deg, #1976d2 0%, #1565c0 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #1565c0 0%, #0d47a1 100%)',
-                  },
-                }}
-              >
-                このタレントについて相談する
-              </Button>
+              <CircularProgress size={40} />
+              <Typography variant="body2" color="text.secondary">
+                詳細情報を読み込んでいます...
+              </Typography>
             </Box>
-          </Box>
+          )}
+
+          {/* エラー状態 */}
+          {error && !isLoading && (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 4,
+              gap: 2
+            }}>
+              <Typography variant="body1" color="error" textAlign="center" sx={{ fontSize: '0.9rem' }}>
+                {error}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ fontSize: '0.8rem' }}>
+                詳細情報の取得に失敗しましたが、基本情報は表示されています。
+              </Typography>
+            </Box>
+          )}
+
+          {/* 正常状態 - コンパクトな表示 */}
+          {!isLoading && !error && (
+            <Box sx={{ py: 1, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                詳細情報の表示が完了しました
+              </Typography>
+            </Box>
+          )}
         </Box>
       </DialogContent>
     </Dialog>

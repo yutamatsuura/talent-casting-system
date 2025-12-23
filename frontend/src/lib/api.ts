@@ -36,6 +36,7 @@ interface MatchingApiResponse {
     name: string;
     kana?: string;
     category?: string;
+    company_name?: string; // 事務所名
     matching_score: number;
     ranking: number;
     base_power_score?: number;
@@ -142,8 +143,9 @@ export async function callMatchingApi(formData: FormData): Promise<{ results: Ta
       success: data.success,
       total_results: data.total_results,
       first_talent: data.results[0] || null,
-      cm_status_sample: data.results.slice(0, 3).map(t => ({
+      company_name_check: data.results.slice(0, 3).map(t => ({
         name: t.name,
+        company_name: t.company_name || 'NO_COMPANY_NAME', // 事務所名確認
         is_currently_in_cm: t.is_currently_in_cm
       }))
     });
@@ -159,6 +161,7 @@ export async function callMatchingApi(formData: FormData): Promise<{ results: Ta
     name: item.name,
     kana: item.kana,
     category: item.category,
+    company_name: item.company_name, // 事務所名を追加
     matching_score: item.matching_score,
     ranking: item.ranking,
     base_power_score: item.base_power_score,
@@ -167,6 +170,15 @@ export async function callMatchingApi(formData: FormData): Promise<{ results: Ta
     is_currently_in_cm: item.is_currently_in_cm, // 競合利用中フラグを追加
     imageUrl: `/placeholder-user.jpg`, // TODO: 実際の画像URL実装
   }));
+
+  // 変換後データの確認
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🎯 Transformed results sample:', results.slice(0, 3).map(r => ({
+      name: r.name,
+      company_name: r.company_name || 'NO_COMPANY_IN_RESULT',
+      ranking: r.ranking
+    })));
+  }
 
   return {
     results,
@@ -238,6 +250,7 @@ export async function fetchTalentDetails(
       category: data.category,
       age: data.age,
       company_name: data.company_name,
+      birthplace: data.birthplace, // 出身地を追加
       introduction: data.introduction,
       matching_score: data.matching_score || 0, // モーダル表示時は既存スコア使用
       ranking: data.ranking || 0, // モーダル表示時は既存ランキング使用

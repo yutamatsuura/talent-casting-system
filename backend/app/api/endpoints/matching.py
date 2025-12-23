@@ -543,7 +543,7 @@ async def execute_matching_logic(
         query = """
         WITH step0_budget_filter AS (
             -- STEP 0: 予算フィルタリング（MIN/MAX条件チェック + 未登録除外） + アルコール業界年齢フィルタリング
-            SELECT DISTINCT ma.account_id, ma.name_full_for_matching as name, ma.last_name_kana, ma.act_genre
+            SELECT DISTINCT ma.account_id, ma.name_full_for_matching as name, ma.last_name_kana, ma.act_genre, ma.company_name
             FROM m_account ma
             LEFT JOIN m_talent_act mta ON ma.account_id = mta.account_id
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
@@ -663,7 +663,8 @@ async def execute_matching_logic(
             ROW_NUMBER() OVER (ORDER BY r.reflected_score DESC, r.base_power_score DESC, r.account_id) AS ranking,
             bf.name,
             bf.last_name_kana,
-            bf.act_genre
+            bf.act_genre,
+            bf.company_name
         FROM step4_final r
         INNER JOIN step0_budget_filter bf ON bf.account_id = r.account_id
         ORDER BY r.reflected_score DESC, r.base_power_score DESC, r.account_id
@@ -858,6 +859,7 @@ async def post_matching(form_data: MatchingFormData, request: Request, backgroun
                 name=r["name"],
                 kana=r["last_name_kana"],
                 category=r["act_genre"],
+                company_name=r.get("company_name"),
                 matching_score=r["matching_score"],
                 ranking=r["ranking"],
                 base_power_score=float(r["base_power_score"]) if r["base_power_score"] else None,
@@ -940,6 +942,7 @@ async def post_matching_optimized(form_data: MatchingFormData, request: Request,
                 name=result.get('name') or f"タレント{result['account_id']}",
                 kana=result.get('last_name_kana', ''),
                 category=result.get('act_genre', ''),
+                company_name=result.get('company_name'),
                 matching_score=result.get('matching_score', 0.0),
                 ranking=result.get('ranking', 0),
                 base_power_score=result.get('base_power_score', 0.0),
@@ -1015,6 +1018,7 @@ async def post_matching_ultra_optimized(
                 name=result.get('name') or f"タレント{result['account_id']}",
                 kana=result.get('last_name_kana', ''),
                 category=result.get('act_genre', ''),
+                company_name=result.get('company_name'),
                 matching_score=result.get('matching_score', 0.0),
                 ranking=result.get('ranking', 0),
                 base_power_score=result.get('base_power_score', 0.0),

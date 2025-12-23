@@ -72,6 +72,7 @@ export default function ResultsStandalonePage() {
           name: t.n,
           kana: t.k,
           category: t.c,
+          company_name: t.cn, // 事務所名を追加
           matching_score: t.s,
           ranking: t.rk,
           base_power_score: 0,

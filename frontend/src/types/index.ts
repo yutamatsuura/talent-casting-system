@@ -25,6 +25,7 @@ export interface TalentResult {
   name: string; // タレント名
   kana?: string; // タレント名（カナ）
   category?: string; // カテゴリ（act_genre）
+  company_name?: string; // 事務所名（m_account.company_name）
   matching_score: number; // マッチングスコア（86.0-99.7）
   ranking: number; // 順位（1-30）
   imageUrl?: string; // 画像URL
@@ -338,6 +339,7 @@ export interface TalentDetailInfo {
   category?: string;
   age?: number;
   company_name?: string;
+  birthplace?: string;  // 出身地（都道府県名）
   introduction?: string;
   matching_score: number;
   ranking: number;

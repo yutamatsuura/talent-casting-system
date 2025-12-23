@@ -1,0 +1,1 @@
+{"detail":[{"type":"string_type","loc":["body","target_segments"],"msg":"Input should be a valid string","input":["男性35-49"]}]}

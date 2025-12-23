@@ -1,0 +1,12 @@
+{
+  "industry": "食品",
+  "target_segment": "女性20-34",
+  "purpose": ["商品サービスの知名度アップ"],
+  "budget_range": "1,000万円～3,000万円未満",
+  "company_name": "株式会社テストクライアント",
+  "contact_name": "田中太郎",
+  "email": "test@example.com",
+  "phone": "03-1234-5678",
+  "genre_preference": "明るい・親しみやすい",
+  "preferred_genres": ["ポップス・J-POP", "バラエティ"]
+}

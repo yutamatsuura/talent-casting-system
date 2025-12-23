@@ -12,7 +12,7 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
-import { CalendarMonth, Refresh, Error as ErrorIcon, AccountCircle, TipsAndUpdates, Download, Person } from '@mui/icons-material';
+import { CalendarMonth, Refresh, Error as ErrorIcon, AccountCircle, TipsAndUpdates, Download, Person, BarChart, EmojiEvents } from '@mui/icons-material';
 import { FormData, TalentResult, API_ENDPOINTS, ButtonClickData, ButtonClickResponse } from '@/types';
 // パーソナライズメッセージは固定の共通メッセージに変更済み
 import { TalentDetailModal } from './TalentDetailModal';
@@ -263,55 +263,77 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                 </Box>
 
                 {/* タレントリスト（API結果） */}
+                {/* 1〜3位 */}
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  gutterBottom
+                  sx={{ mt: 2.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <EmojiEvents sx={{ color: '#ffd700', fontSize: '1.5rem' }} />
+                  1〜3位
+                </Typography>
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
                     gap: 3,
-                    mt: 2,
+                    mb: 0,
                   }}
                 >
-                  {talents.map((talent, index) => {
-                    const isRecommended = talent.is_recommended || false;
+                  {talents.slice(0, 3).map((talent, index) => {
+                    const isRecommended = true; // 1〜3位は常にオススメ
                     const isCompetitorUsed = talent.is_currently_in_cm || false;
-
-                    // デバッグログ：競合利用中状況を確認（本番環境では無効化）
-                    if (process.env.NODE_ENV !== 'production') {
-                      console.log(`タレント ${talent.name}: is_currently_in_cm=${talent.is_currently_in_cm}, isCompetitorUsed=${isCompetitorUsed}`);
-                    }
+                    const rankPosition = talent.ranking || (index + 1);
 
                     return (
                       <Card
                         key={talent.account_id}
-                        elevation={0}
+                        elevation={3}
                         sx={{
                           borderRadius: 3,
                           backgroundColor: 'white',
-                          border: isCompetitorUsed
-                            ? '2px solid #f44336'
-                            : '1px solid #e9ecef',
-                          transition: 'transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease',
+                          border: isCompetitorUsed ? '2px solid #f44336' : '2px solid #1976d2',
+                          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                           overflow: 'hidden',
                           opacity: isCompetitorUsed ? 0.7 : 1,
-                          filter: isCompetitorUsed ? 'grayscale(30%)' : 'none',
                           position: 'relative',
                           '&:hover': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: isCompetitorUsed
-                              ? '0 4px 12px rgba(244,67,54,0.3)'
-                              : '0 4px 12px rgba(0,0,0,0.1)',
-                            opacity: isCompetitorUsed ? 0.85 : 1,
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 8px 24px rgba(25,118,210,0.2)',
                           },
                         }}
                       >
-                        <CardContent sx={{ p: 0, pb: 1.875, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <CardContent sx={{ p: 0 }}>
+                          {/* ランキング表示 */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: -5,
+                              left: 15,
+                              zIndex: 2,
+                              bgcolor: rankPosition === 1 ? '#ffd700' : rankPosition === 2 ? '#c0c0c0' : '#cd7f32',
+                              color: '#333',
+                              borderRadius: '50%',
+                              width: 40,
+                              height: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 'bold',
+                              fontSize: '1.1rem',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                            }}
+                          >
+                            {rankPosition}
+                          </Box>
                           {/* ステータスラベル */}
                           {(isRecommended || isCompetitorUsed) && (
                             <Box
                               sx={{
                                 position: 'absolute',
                                 top: 12,
-                                left: 12,
+                                right: 12,
                                 zIndex: 1,
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -389,8 +411,8 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                           <Box
                             sx={{
                               width: '100%',
-                              height: { xs: '80px', sm: '100px', lg: '120px' },
-                              background: 'linear-gradient(to bottom right, #f3f4f6, #e5e7eb)',
+                              height: { xs: '120px', md: '140px' },
+                              background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -399,68 +421,248 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                           >
                             <Box
                               sx={{
-                                width: { xs: '64px', sm: '80px', lg: '80px' },
-                                height: { xs: '64px', sm: '80px', lg: '80px' },
+                                width: { xs: '80px', md: '100px' },
+                                height: { xs: '80px', md: '100px' },
                                 backgroundColor: 'white',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.1)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                               }}
                             >
                               <Person
                                 sx={{
-                                  fontSize: { xs: '2.5rem', sm: '3rem', lg: '3rem' },
-                                  color: '#9ca3af',
+                                  fontSize: { xs: '3rem', md: '4rem' },
+                                  color: '#1976d2',
                                 }}
                               />
                             </Box>
                           </Box>
 
-                          {/* コンテンツエリア */}
-                          <Box sx={{ px: 1.5, py: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {/* タレント情報 */}
+                          <Box sx={{ p: 2.5, pb: 1.25 }}>
+                            <Typography
+                              variant="h6"
+                              fontWeight="bold"
+                              textAlign="center"
+                              sx={{ mb: 1, fontSize: { xs: '1.1rem', md: '1.25rem' } }}
+                            >
+                              {talent.name}
+                            </Typography>
+
+                            {talent.company_name && (
                               <Typography
                                 variant="body2"
-                                fontWeight="bold"
+                                color="text.secondary"
                                 textAlign="center"
-                                sx={{ fontSize: '1rem' }}
+                                sx={{ mb: 1.5, fontSize: '0.9rem' }}
                               >
-                                {talent.name}
+                                {talent.company_name}
+                              </Typography>
+                            )}
+
+                            {/* マッチングスコア */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: '#f8f9fa',
+                                borderRadius: 2,
+                                p: 1.5,
+                                mb: 1.5,
+                              }}
+                            >
+                              <Typography
+                                variant="h5"
+                                fontWeight="bold"
+                                color="#1976d2"
+                                sx={{ mr: 0.5 }}
+                              >
+                                {talent.matching_score}%
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                マッチング度
                               </Typography>
                             </Box>
 
-                            <Box sx={{ pt: 0.5 }}>
-                              <Button
-                                variant="contained"
-                                fullWidth
-                                size="medium"
-                                sx={{
-                                  bgcolor: '#1976d2',
-                                  color: 'white',
-                                  fontWeight: 'bold',
-                                  fontSize: '0.875rem',
-                                  py: 1,
-                                  textTransform: 'none',
-                                  '&:hover': {
-                                    bgcolor: '#1565c0',
-                                  },
-                                }}
-                                onClick={() => {
-                                  setSelectedTalent(talent);
-                                  setIsModalOpen(true);
-                                }}
-                              >
-                                詳細を見る
-                              </Button>
-                            </Box>
+                            <Button
+                              variant="contained"
+                              fullWidth
+                              size="large"
+                              sx={{
+                                bgcolor: '#1976d2',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                py: 1.5,
+                                textTransform: 'none',
+                                '&:hover': {
+                                  bgcolor: '#1565c0',
+                                },
+                              }}
+                              onClick={() => {
+                                setSelectedTalent(talent);
+                                setIsModalOpen(true);
+                              }}
+                            >
+                              詳細を見る
+                            </Button>
                           </Box>
                         </CardContent>
                       </Card>
                     );
                   })}
                 </Box>
+
+              {/* 4〜30位 */}
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                gutterBottom
+                sx={{ mt: 2.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                <BarChart sx={{ color: '#1976d2', fontSize: '1.5rem' }} />
+                4〜30位
+              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+                  gap: 2,
+                  mb: 3,
+                }}
+              >
+                {talents.slice(3).map((talent, index) => {
+                  const isCompetitorUsed = talent.is_currently_in_cm || false;
+                  const rankPosition = talent.ranking || (index + 4);
+
+                  return (
+                    <Card
+                      key={talent.account_id}
+                      elevation={1}
+                      sx={{
+                        borderRadius: 2,
+                        backgroundColor: isCompetitorUsed ? '#fef3f3' : 'white',
+                        border: isCompetitorUsed ? '1px solid #f44336' : '1px solid #e0e0e0',
+                        opacity: isCompetitorUsed ? 0.7 : 1,
+                        position: 'relative',
+                      }}
+                    >
+                      {/* 順位表示 */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          left: 8,
+                          zIndex: 2,
+                          bgcolor: '#666666',
+                          color: 'white',
+                          borderRadius: '4px',
+                          minWidth: 24,
+                          height: 18,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold',
+                          px: 0.5,
+                        }}
+                      >
+                        {rankPosition}
+                      </Box>
+
+                      {/* 競合契約中ラベル */}
+                      {isCompetitorUsed && (
+                        <Chip
+                          label="競合契約中"
+                          size="small"
+                          sx={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            zIndex: 2,
+                            bgcolor: '#f44336',
+                            color: 'white',
+                            fontSize: '0.6rem',
+                            fontWeight: 'bold',
+                            height: 20,
+                            borderRadius: '10px',
+                            '& .MuiChip-label': {
+                              px: 1,
+                              py: 0,
+                            },
+                          }}
+                        />
+                      )}
+
+                      <CardContent sx={{ p: 2, pt: 3 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 2,
+                          }}
+                        >
+                          {/* 左側：プロフィールアイコン */}
+                          <Box
+                            sx={{
+                              width: 50,
+                              height: 50,
+                              borderRadius: '50%',
+                              backgroundColor: '#f5f5f5',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Person
+                              sx={{
+                                fontSize: '1.5rem',
+                                color: '#9e9e9e',
+                              }}
+                            />
+                          </Box>
+
+                          {/* 右側：情報 */}
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            {/* タレント名 */}
+                            <Typography
+                              variant="body1"
+                              fontWeight="bold"
+                              sx={{ mb: 0.5, lineHeight: 1.2 }}
+                            >
+                              {talent.name}
+                            </Typography>
+
+                            {/* 事務所名 */}
+                            {talent.company_name && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mb: 0.5, fontSize: '0.85rem', lineHeight: 1.2 }}
+                              >
+                                {talent.company_name}
+                              </Typography>
+                            )}
+
+                            {/* マッチ度 */}
+                            <Typography
+                              variant="body2"
+                              color="primary"
+                              fontWeight="bold"
+                              sx={{ mb: 0.5 }}
+                            >
+                              マッチ度 {talent.matching_score}%
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Box>
 
               </Box>
 
