@@ -17,6 +17,41 @@ export default function ResultsStandalonePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
+  // ページ離脱時にセッションデータをクリア
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // ページ離脱時（タブを閉じる、ブラウザを閉じる、別ページへ移動など）にデータをクリア
+      sessionStorage.removeItem('talentResults');
+      sessionStorage.removeItem('talentFormData');
+      sessionStorage.removeItem('talentApiError');
+      sessionStorage.removeItem('talentSessionId');
+
+      console.log('🧹 結果ページ離脱時にセッションデータをクリアしました');
+    };
+
+    const handleVisibilityChange = () => {
+      // ページがバックグラウンドになった時もクリア（別タブに移動など）
+      if (document.visibilityState === 'hidden') {
+        sessionStorage.removeItem('talentResults');
+        sessionStorage.removeItem('talentFormData');
+        sessionStorage.removeItem('talentApiError');
+        sessionStorage.removeItem('talentSessionId');
+
+        console.log('🧹 結果ページがバックグラウンドになったためセッションデータをクリアしました');
+      }
+    };
+
+    // イベントリスナー追加
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // クリーンアップ
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   useEffect(() => {
     console.log('🔍 結果ページ: URLパラメータからデータ読み込み開始');
 

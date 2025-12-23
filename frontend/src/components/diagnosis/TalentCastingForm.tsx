@@ -62,76 +62,65 @@ export function TalentCastingForm() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
 
-  // LocalStorageからデータ復元
+  // ページ離脱時にセッションデータをクリア
   useEffect(() => {
-    // URLパラメータでリセット指示があるかチェック
-    const urlParams = new URLSearchParams(window.location.search);
-    const shouldReset = urlParams.get('reset') === 'true';
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 URL検査:', {
-        fullUrl: window.location.href,
-        searchParams: window.location.search,
-        resetParam: urlParams.get('reset'),
-        shouldReset: shouldReset
-      });
-    }
-
-    if (shouldReset) {
-      // リセット指示がある場合はLocalStorageをクリアして最初から
+    const handleBeforeUnload = () => {
+      // ページ離脱時（タブを閉じる、ブラウザを閉じる、別ページへ移動など）にデータをクリア
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('talentResults');
       sessionStorage.removeItem('talentFormData');
       sessionStorage.removeItem('talentApiError');
-
-      // 状態も初期値にリセット
-      setFormData(initialFormData);
-      setCurrentStep(1);
-      setErrors({});
-
-      // URLからresetパラメータを削除（履歴に残さないように）
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('reset');
-      window.history.replaceState({}, '', newUrl.toString());
+      sessionStorage.removeItem('talentSessionId');
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔄 フォームを完全にリセットしました（URLパラメータ指示）');
-        console.log('🧹 URLからresetパラメータを削除しました');
+        console.log('🧹 ページ離脱時にセッションデータをクリアしました');
       }
-      return;
+    };
+
+    const handleVisibilityChange = () => {
+      // ページがバックグラウンドになった時もクリア（別タブに移動など）
+      if (document.visibilityState === 'hidden') {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem('talentResults');
+        sessionStorage.removeItem('talentFormData');
+        sessionStorage.removeItem('talentApiError');
+        sessionStorage.removeItem('talentSessionId');
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('🧹 ページがバックグラウンドになったためセッションデータをクリアしました');
+        }
+      }
+    };
+
+    // イベントリスナー追加
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 初期化時は既存データをクリア（常に最初からスタート）
+    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem('talentResults');
+    sessionStorage.removeItem('talentFormData');
+    sessionStorage.removeItem('talentApiError');
+    sessionStorage.removeItem('talentSessionId');
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔄 診断フォームを初期化しました（常に最初からスタート）');
     }
 
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const merged = {
-          ...formData,
-          ...parsed.formData,
-          q3: typeof parsed.formData?.q3 === 'string' ? parsed.formData.q3 : '',
-          q7_2_genres: Array.isArray(parsed.formData?.q7_2_genres) ? parsed.formData.q7_2_genres : [],
-          privacyAgreed: false,
-        };
-        setFormData(merged);
-        setCurrentStep(parsed.currentStep || 1);
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('💾 保存されたデータを復元しました:', { step: parsed.currentStep });
-        }
-      } catch (e) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('Failed to parse saved data', e);
-        }
-      }
-    } else {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('📝 保存されたデータがありません、最初からスタート');
-      }
-    }
+    // クリーンアップ
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
-  // LocalStorageに保存
+  // セッション内でのステップ進行管理（メモリのみ、LocalStorage使用なし）
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ formData, currentStep }));
+    // 現在のセッション中はメモリ上でのみ状態を保持
+    // LocalStorageには保存しない
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📊 セッション内進行状況:', { currentStep, formDataKeys: Object.keys(formData) });
+    }
   }, [formData, currentStep]);
 
   const validateStep = (step: number): boolean => {
@@ -371,7 +360,17 @@ export function TalentCastingForm() {
     setErrors({});
     setApiResults([]);
     setApiError(null);
-    localStorage.removeItem(STORAGE_KEY);
+
+    // セッションデータもクリア
+    sessionStorage.removeItem('talentResults');
+    sessionStorage.removeItem('talentFormData');
+    sessionStorage.removeItem('talentApiError');
+    sessionStorage.removeItem('talentSessionId');
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔄 フォームをリセットしました');
+    }
+
     // ページトップにスムーズにスクロール
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
