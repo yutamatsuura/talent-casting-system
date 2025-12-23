@@ -90,7 +90,7 @@ export function TalentCastingForm() {
       setErrors({});
 
       // URLからresetパラメータを削除（履歴に残さないように）
-      const newUrl = new URL(window.location);
+      const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('reset');
       window.history.replaceState({}, '', newUrl.toString());
 
