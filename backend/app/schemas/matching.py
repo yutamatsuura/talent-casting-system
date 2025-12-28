@@ -9,7 +9,7 @@ class MatchingFormData(BaseModel):
 
     industry: str = Field(..., description="業種名")
     target_segments: str = Field(..., min_length=1, description="ターゲット層（単一選択）")
-    purpose: str = Field(..., min_length=1, max_length=255, description="起用目的")
+    purpose: List[str] = Field(..., min_length=1, description="起用目的（複数選択可）")
     budget: str = Field(..., description="予算区分")
     company_name: str = Field(..., min_length=1, max_length=255, description="企業名")
     email: str = Field(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", description="メールアドレス")
@@ -48,8 +48,8 @@ class MatchingFormData(BaseModel):
             "example": {
                 "industry": "化粧品・ヘアケア・オーラルケア",
                 "target_segments": "女性20-34歳",
-                "purpose": "商品の認知度向上",
-                "budget": "1,000万円～3,000万円未満",
+                "purpose": ["商品の認知度向上", "ブランディング"],
+                "budget": "1,000万円〜3,000万円",
                 "company_name": "株式会社テストクライアント",
                 "email": "test@talent-casting-dev.local",
             }

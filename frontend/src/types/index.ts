@@ -8,7 +8,7 @@ export interface FormData {
   termsAgreed?: boolean; // 利用規約同意（必須）
   q2: string; // 業種選択（必須）
   q3: string; // ターゲット層選択（必須、単一選択）
-  q3_2: string; // タレント起用理由（必須）
+  q3_2: string[]; // タレント起用理由（必須、複数選択可）
   q3_3: string; // 予算区分（必須）
   q4: string; // 会社名（必須）
   q5: string; // 担当者名（必須）

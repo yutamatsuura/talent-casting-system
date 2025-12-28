@@ -56,7 +56,7 @@ const getInitialData = () => {
     formData: {
       q2: '',
       q3: [],
-      q3_2: '',
+      q3_2: [],
       q3_3: '',
       q4: '',
       q5: '',
@@ -131,7 +131,7 @@ export function DiagnosisSystemPage() {
     setFormData({
       q2: '',
       q3: '',
-      q3_2: '',
+      q3_2: [],
       q3_3: '',
       q4: '',
       q5: '',

@@ -384,7 +384,19 @@ export default function AdminPage() {
         `業種,"${submission.industry}"`,
         `ターゲット層,"${submission.target_segment}"`,
         `予算,"${submission.budget_range}"`,
-        `起用目的,${submission.purpose || ''}`,
+        `起用目的,"${(() => {
+          try {
+            if (submission.purpose && typeof submission.purpose === 'string') {
+              const parsed = JSON.parse(submission.purpose);
+              if (Array.isArray(parsed)) {
+                return parsed.join(', ');
+              }
+            }
+            return submission.purpose || '';
+          } catch (e) {
+            return submission.purpose || '';
+          }
+        })()}"`,
         `診断実行日時,${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`,
         `タレント数,${csvExportData.length}件`
       ].join('\n');
@@ -1661,7 +1673,21 @@ export default function AdminPage() {
                   起用目的
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 2 }}>
-                  {selectedSubmission.purpose || '未入力'}
+                  {(() => {
+                    try {
+                      // JSON文字列の場合はパースして配列として表示
+                      if (selectedSubmission.purpose && typeof selectedSubmission.purpose === 'string') {
+                        const parsed = JSON.parse(selectedSubmission.purpose);
+                        if (Array.isArray(parsed)) {
+                          return parsed.join(', ');
+                        }
+                      }
+                      return selectedSubmission.purpose || '未入力';
+                    } catch (e) {
+                      // JSONパースに失敗した場合は元の値をそのまま表示
+                      return selectedSubmission.purpose || '未入力';
+                    }
+                  })()}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12 }}>

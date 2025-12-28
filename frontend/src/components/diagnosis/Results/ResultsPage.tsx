@@ -33,6 +33,9 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
   const [selectedTalent, setSelectedTalent] = useState<TalentResult | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // CSVダウンロード状態管理
+  const [csvDownloading, setCsvDownloading] = useState(false);
+
   // 業界別予約リンク状態管理
   const [bookingUrl, setBookingUrl] = useState<string>('https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm');
 
@@ -103,6 +106,73 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
       if (process.env.NODE_ENV !== 'production') {
         console.error('Error tracking button click:', error);
       }
+    }
+  };
+
+  // CSVダウンロードハンドラー関数
+  const handleCsvDownload = async () => {
+    if (!sessionId) {
+      alert('セッション情報が見つかりません。ページを再読み込みしてお試しください。');
+      return;
+    }
+
+    setCsvDownloading(true);
+
+    try {
+      // CSVダウンロードボタンクリックを記録
+      await trackButtonClick('csv_download', 'CSVダウンロード');
+
+      // バックエンドからCSVをダウンロード
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8432';
+      const response = await fetch(`${API_BASE_URL}/api/csv-download/${sessionId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/csv',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          alert('診断結果が見つかりません。時間をおいて再度お試しください。');
+        } else {
+          alert('CSVダウンロード中にエラーが発生しました。しばらく時間をおいて再度お試しください。');
+        }
+        return;
+      }
+
+      // ファイルダウンロード処理
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // ファイル名を取得（レスポンスヘッダーから）
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'タレント診断結果.csv';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) {
+          filename = match[1];
+        }
+      }
+
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // クリーンアップ
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ CSVダウンロード完了:', filename);
+      }
+
+    } catch (error) {
+      console.error('❌ CSVダウンロードエラー:', error);
+      alert('CSVダウンロード中にエラーが発生しました。ネットワーク接続を確認して再度お試しください。');
+    } finally {
+      setCsvDownloading(false);
     }
   };
 
@@ -734,16 +804,28 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                       >
                         <Download sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
                       </Box>
-                      <Box>
+                      <Box sx={{ flex: 1 }}>
                         <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
                           簡易版タレントリストダウンロード
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
-                          ご入力いただいたメールアドレス宛にダウンロード用リンクをお送りいたしました。
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 2 }}>
+                          診断結果30名のタレントリスト（マッチングスコア、基礎パワー得点、イメージ調整など）をCSV形式でダウンロードできます。
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                          診断結果をまとめたリストをダウンロードしていただけます。
-                        </Typography>
+                        <Button
+                          variant="contained"
+                          startIcon={<Download />}
+                          onClick={handleCsvDownload}
+                          disabled={!sessionId || csvDownloading}
+                          sx={{
+                            bgcolor: 'primary.main',
+                            '&:hover': { bgcolor: 'primary.dark' },
+                            fontWeight: 600,
+                            px: 3,
+                            py: 1
+                          }}
+                        >
+                          {csvDownloading ? 'ダウンロード中...' : 'CSVダウンロード'}
+                        </Button>
                       </Box>
                     </Box>
 

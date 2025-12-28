@@ -6,6 +6,7 @@ import random
 import uuid
 import logging
 import os
+import json
 import asyncio  # Phase A1最適化: 並列処理用
 from typing import Optional, Dict
 from functools import lru_cache
@@ -37,51 +38,94 @@ async def save_diagnosis_results(
     db: AsyncSession
 ) -> None:
     """
-    診断結果タレント30名をデータベースに保存
+    診断結果タレント30名をデータベースに保存（接続エラー対処版）
 
     Args:
         session_id: フォーム送信のセッションID
         talent_results: 診断結果タレントリスト
         db: データベースセッション
     """
-    try:
-        # セッションIDに対応するform_submission_idを取得
-        from sqlalchemy import select
+    max_retries = 2
+    current_db = db
 
-        result = await db.execute(
-            select(FormSubmission).where(FormSubmission.session_id == session_id)
-        )
-        form_submission = result.scalar_one_or_none()
+    for attempt in range(max_retries):
+        try:
+            # セッション状態確認
+            if current_db.is_active is False or current_db.info.get('connection_closed', False):
+                logger.warning(f"診断結果保存: セッションが非アクティブです(試行 {attempt + 1}): session_id={session_id}")
+                if attempt < max_retries - 1:  # 最後の試行でない場合のみリトライ
+                    # 新しいセッションを取得
+                    from app.db.connection import get_db_session
+                    async for new_session in get_db_session():
+                        current_db = new_session
+                        break
+                    continue
+                else:
+                    logger.error(f"診断結果保存: 最大リトライ回数に到達、保存を中止: session_id={session_id}")
+                    return
 
-        if not form_submission:
-            logger.warning(f"フォーム送信が見つかりません: session_id={session_id}")
-            return
+            # セッションIDに対応するform_submission_idを取得
+            from sqlalchemy import select
 
-        # 既存の診断結果を削除（重複防止）
-        from sqlalchemy import delete
-        await db.execute(
-            delete(DiagnosisResult).where(DiagnosisResult.form_submission_id == form_submission.id)
-        )
-
-        # 新しい診断結果を保存
-        for talent in talent_results:
-            diagnosis_result = DiagnosisResult(
-                form_submission_id=form_submission.id,
-                ranking=talent.ranking,
-                talent_account_id=talent.account_id,
-                talent_name=talent.name,
-                talent_category=talent.category,
-                matching_score=talent.matching_score
+            result = await current_db.execute(
+                select(FormSubmission).where(FormSubmission.session_id == session_id)
             )
-            db.add(diagnosis_result)
+            form_submission = result.scalar_one_or_none()
 
-        await db.commit()
-        logger.info(f"診断結果保存完了: session_id={session_id}, count={len(talent_results)}")
+            if not form_submission:
+                logger.warning(f"フォーム送信が見つかりません: session_id={session_id}")
+                return
 
-    except Exception as e:
-        await db.rollback()
-        logger.error(f"診断結果保存エラー: session_id={session_id}, error={str(e)}")
-        # エラーが発生しても診断結果の返却は継続する
+            # 既存の診断結果を削除（重複防止）
+            from sqlalchemy import delete
+            await current_db.execute(
+                delete(DiagnosisResult).where(DiagnosisResult.form_submission_id == form_submission.id)
+            )
+
+            # 新しい診断結果を保存
+            for talent in talent_results:
+                diagnosis_result = DiagnosisResult(
+                    form_submission_id=form_submission.id,
+                    ranking=talent.ranking,
+                    talent_account_id=talent.account_id,
+                    talent_name=talent.name,
+                    talent_category=talent.category,
+                    matching_score=talent.matching_score
+                )
+                current_db.add(diagnosis_result)
+
+            await current_db.commit()
+            logger.info(f"診断結果保存完了: session_id={session_id}, count={len(talent_results)}")
+            return  # 成功時は即座に終了
+
+        except Exception as e:
+            # 接続エラーの詳細情報をログに記録
+            error_type = type(e).__name__
+            error_message = str(e)
+
+            # SQLAlchemyの接続エラーかどうか判定
+            is_connection_error = (
+                'connection is closed' in error_message.lower() or
+                'InterfaceError' in error_type or
+                'OperationalError' in error_type or
+                'DisconnectionError' in error_type
+            )
+
+            try:
+                await current_db.rollback()
+            except:
+                # rollback失敗は無視（接続が閉じられている場合は期待される動作）
+                pass
+
+            if is_connection_error and attempt < max_retries - 1:
+                logger.warning(f"診断結果保存: 接続エラー検出、リトライします(試行 {attempt + 1}): session_id={session_id}, error={error_type}: {error_message}")
+                # マークして次の試行で新しいセッションを取得
+                current_db.info['connection_closed'] = True
+                continue
+            else:
+                logger.error(f"診断結果保存エラー: session_id={session_id}, error_type={error_type}, message={error_message}")
+                # エラーが発生しても診断結果の返却は継続する
+                return
 
 
 async def get_detailed_talent_data_for_export(
@@ -325,7 +369,6 @@ async def save_form_submission(form_data: MatchingFormData, request: Request) ->
         # ジャンルリストをJSONに変換
         preferred_genres_json = None
         if form_data.preferred_genres:
-            import json
             preferred_genres_json = json.dumps(form_data.preferred_genres, ensure_ascii=False)
 
         # フォーム送信データを保存
@@ -341,7 +384,7 @@ async def save_form_submission(form_data: MatchingFormData, request: Request) ->
             session_id,
             form_data.industry,
             form_data.target_segments,
-            form_data.purpose,
+            json.dumps(form_data.purpose),  # 配列をJSON文字列として保存
             form_data.budget,
             form_data.company_name,
             form_data.contact_name,
@@ -535,6 +578,9 @@ async def execute_matching_logic(
         # アルコール業界かどうか判定
         is_alcohol_industry = form_data.industry == "アルコール飲料"
 
+        # 「1億円以上」選択時判定（金額NULLタレント通過用）
+        is_unlimited_budget = form_data.budget == "1億円以上"
+
         # おすすめタレントID取得（予算フィルタリング除外のため）
         recommended_talents = await get_recommended_talents_for_matching(form_data.industry)
         recommended_ids = [t["account_id"] for t in recommended_talents] if recommended_talents else []
@@ -549,18 +595,20 @@ async def execute_matching_logic(
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
               AND mta.account_id IS NOT NULL  -- 未登録タレントを除外
               AND (
-                -- パターン1: 両方設定済み（MIN有・MAX有）→ ユーザー予算がMIN以上で通過
+                -- パターン1: 両方設定済み（MIN有・MAX有）→ タレント最高金額がユーザー予算以下で通過
                 (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NOT NULL
-                 AND $1 >= mta.money_min_one_year)
+                 AND mta.money_max_one_year <= $1)
                 OR
-                -- パターン2: MIN有・MAX無 → ユーザー予算がMIN以上で通過
+                -- パターン2: MIN有・MAX無 → ユーザー予算がタレント最低要求以上で通過
                 (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NULL
                  AND $1 >= mta.money_min_one_year)
                 OR
-                -- パターン3: MIN無・MAX有 → ユーザー予算がMAX以上で通過
+                -- パターン3: MIN無・MAX有 → タレント最高金額がユーザー予算以下で通過
                 (mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NOT NULL
-                 AND $1 >= mta.money_max_one_year)
-                -- パターン4: 両方NULL → 除外（条件なし）
+                 AND mta.money_max_one_year <= $1)
+                OR
+                -- パターン4: 「1億円以上」選択時のみ両方NULL → 通過
+                ($5 = true AND mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NULL)
               ) AND (
                 -- アルコール業界の場合のみ25歳以上フィルタ適用（$4で制御）
                 $4 = false OR (
@@ -670,7 +718,7 @@ async def execute_matching_logic(
         ORDER BY r.reflected_score DESC, r.base_power_score DESC, r.account_id
         """
 
-        rows = await conn.fetch(query, max_budget, target_segment_id, image_item_ids, is_alcohol_industry)
+        rows = await conn.fetch(query, max_budget, target_segment_id, image_item_ids, is_alcohol_industry, is_unlimited_budget)
         return [dict(row) for row in rows]
     finally:
         await release_asyncpg_connection(conn)

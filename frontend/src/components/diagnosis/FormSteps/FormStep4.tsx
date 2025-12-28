@@ -2,12 +2,12 @@
 
 import {
   Box,
+  Checkbox,
   FormControl,
   FormControlLabel,
   FormHelperText,
   FormLabel,
-  Radio,
-  RadioGroup,
+  FormGroup,
   Typography,
 } from '@mui/material';
 import { Psychology } from '@mui/icons-material';
@@ -40,20 +40,26 @@ export function FormStep4({ formData, setFormData, errors }: FormStep4Props) {
       </Box>
       <FormControl error={!!errors.q3_2} fullWidth>
         <FormLabel sx={{ mb: 1.5, fontSize: '1.1rem', fontWeight: 600 }}>
-          今回のタレント起用の主な目的は何ですか？
+          今回のタレント起用の目的は何ですか？（複数選択可）
         </FormLabel>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          ※最も重要な目的を1つ選択してください
+          ※該当する目的をすべて選択してください
         </Typography>
-        <RadioGroup
-          value={formData.q3_2}
-          onChange={(e) => setFormData({ ...formData, q3_2: e.target.value })}
-        >
+        <FormGroup>
           {purposeOptions.map((purpose) => (
             <FormControlLabel
               key={purpose}
-              value={purpose}
-              control={<Radio />}
+              control={
+                <Checkbox
+                  checked={formData.q3_2.includes(purpose)}
+                  onChange={(e) => {
+                    const updatedPurposes = e.target.checked
+                      ? [...formData.q3_2, purpose]
+                      : formData.q3_2.filter((p) => p !== purpose);
+                    setFormData({ ...formData, q3_2: updatedPurposes });
+                  }}
+                />
+              }
               label={purpose}
               sx={{
                 p: 1,
@@ -63,7 +69,7 @@ export function FormStep4({ formData, setFormData, errors }: FormStep4Props) {
               }}
             />
           ))}
-        </RadioGroup>
+        </FormGroup>
         {errors.q3_2 && <FormHelperText>{errors.q3_2}</FormHelperText>}
       </FormControl>
     </Box>

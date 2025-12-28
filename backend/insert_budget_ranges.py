@@ -12,15 +12,14 @@ async def insert_budget_ranges():
     """予算区分マスタデータを投入"""
     database_url = os.getenv('DATABASE_URL')
 
-    # CLAUDE.mdに基づいた予算区分データ
+    # 新しい予算区分データ（フロントエンドと完全一致）
     budget_data = [
-        {"name": "100万円未満", "min_amount": 0, "max_amount": 999999, "display_order": 1},
-        {"name": "100万円～500万円未満", "min_amount": 1000000, "max_amount": 4999999, "display_order": 2},
-        {"name": "500万円～1,000万円未満", "min_amount": 5000000, "max_amount": 9999999, "display_order": 3},
-        {"name": "1,000万円～3,000万円未満", "min_amount": 10000000, "max_amount": 29999999, "display_order": 4},  # CLAUDE.mdのテスト予算
-        {"name": "3,000万円～5,000万円未満", "min_amount": 30000000, "max_amount": 49999999, "display_order": 5},
-        {"name": "5,000万円～1億円未満", "min_amount": 50000000, "max_amount": 99999999, "display_order": 6},
-        {"name": "1億円以上", "min_amount": 100000000, "max_amount": None, "display_order": 7},
+        {"range_name": "500万円以下", "min_amount": 0, "max_amount": 5000000},
+        {"range_name": "500万円〜1,000万円", "min_amount": 5000001, "max_amount": 10000000},
+        {"range_name": "1,000万円〜3,000万円", "min_amount": 10000001, "max_amount": 30000000},
+        {"range_name": "3,000万円〜5,000万円", "min_amount": 30000001, "max_amount": 50000000},
+        {"range_name": "5,000万円〜1億円", "min_amount": 50000001, "max_amount": 100000000},
+        {"range_name": "1億円以上", "min_amount": 100000001, "max_amount": None},
     ]
 
     print(f"🔗 データベース接続中...")
@@ -45,20 +44,20 @@ async def insert_budget_ranges():
 
         for budget in budget_data:
             await conn.execute("""
-                INSERT INTO budget_ranges (name, min_amount, max_amount, display_order)
-                VALUES ($1, $2, $3, $4)
-            """, budget["name"], budget["min_amount"], budget["max_amount"], budget["display_order"])
+                INSERT INTO budget_ranges (range_name, min_amount, max_amount)
+                VALUES ($1, $2, $3)
+            """, budget["range_name"], budget["min_amount"], budget["max_amount"])
 
-            print(f"  ✅ {budget['name']} (¥{budget['min_amount']:,} - {f'¥{budget['max_amount']:,}' if budget['max_amount'] else '上限なし'})")
+            print(f"  ✅ {budget['range_name']} (¥{budget['min_amount']:,} - {f'¥{budget['max_amount']:,}' if budget['max_amount'] else '上限なし'})")
 
         # 投入結果を確認
         final_count = await conn.fetchval("SELECT COUNT(*) FROM budget_ranges")
         print(f"\n📊 投入完了: {final_count}件")
 
         # テスト用予算区分の確認
-        claude_budget = "1,000万円～3,000万円未満"
+        claude_budget = "1,000万円〜3,000万円"
         found = await conn.fetchrow(
-            "SELECT * FROM budget_ranges WHERE name = $1", claude_budget
+            "SELECT * FROM budget_ranges WHERE range_name = $1", claude_budget
         )
 
         if found:

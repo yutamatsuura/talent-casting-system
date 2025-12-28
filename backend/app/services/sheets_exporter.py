@@ -133,7 +133,7 @@ class SheetsExporter:
                 ["実行条件"] + empty_cols,
                 [f"業種: {input_conditions.get('industry', '')}"] + empty_cols,
                 [f"ターゲット層: {', '.join(input_conditions.get('target_segments', []))}"] + empty_cols,
-                [f"目的: {input_conditions.get('purpose', '')}"] + empty_cols,
+                [f"目的: {', '.join(input_conditions.get('purpose', [])) if isinstance(input_conditions.get('purpose', []), list) else input_conditions.get('purpose', '')}"] + empty_cols,
                 [f"予算: {input_conditions.get('budget', '')}"] + empty_cols,
                 [f"実行日時: {input_conditions.get('timestamp', '')}"] + empty_cols,
                 [""] * 16,  # 空行
@@ -337,7 +337,7 @@ class SheetsExporter:
             timestamp,
             conditions.get('industry', ''),
             ', '.join(conditions.get('target_segments', [])),
-            conditions.get('purpose', ''),
+            ', '.join(conditions.get('purpose', [])) if isinstance(conditions.get('purpose', []), list) else conditions.get('purpose', ''),
             conditions.get('budget', ''),
             conditions.get('result_url', '')
         ]

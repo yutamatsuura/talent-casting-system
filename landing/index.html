@@ -185,8 +185,8 @@
                     <li><a href="#nagare">ご利用の流れ</a></li>
                     <li><a href="#slide">機能</a></li>
                     <li><a href="#question">よくある質問</a></li>
-                    <li class="btn-01"><a href="">無料でプロに相談する</a></li>
-                    <li class="btn-02"><a href="">お問い合わせ</a></li>
+                    <li class="btn-02"><a href="https://www.e-spirit.jp/privacy-agreement/" target="_blank">お問い合わせ</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -203,8 +203,7 @@
                 <li><a href="#nagare">ご利用の流れ</a></li>
                 <li><a href="#slide">機能</a></li>
                 <li><a href="#question">よくある質問</a></li>
-                <li class="btn-01"><a href="">無料でプロに相談する</a></li>
-                <li class="btn-02"><a href="">お問い合わせ</a></li>
+                <li class="btn-02"><a href="https://www.e-spirit.jp/privacy-agreement/" target="_blank">お問い合わせ</a></li>
             </ul>
         </div><!-- drawer-nav-main -->
     </nav>
@@ -452,13 +451,13 @@
                         <div class="step-main-left-list step-main-left-list-03  f-s">
                             <span class="d-block f-700">サポート内容</span>
                             <ul>
-                                <li>・サービス内容やご要望を丁寧にヒアリングするため、初回は60分の完全無料カウンセリングを実施しています。</li>
+                                <li>・初回完全無料60分カウンセリング</li>
                             </ul>
                             <ul>
-                                <li>・目的やイメージに合ったオリジナルのタレントリストを無料でご提供します。</li>
+                                <li>・オリジナルタレントリストを提供</li>
                             </ul>
                             <ul>
-                                <li>・タレントの選定はもちろん、出演交渉や決定後の各種対応まで、一貫してフルサポートいたします。</li>
+                                <li>・タレント選定から出演交渉、決定後対応までフルサポート</li>
                             </ul>
                         </div>
                     </div>
@@ -525,11 +524,11 @@
             <div class="container m-lr">
                 <!-- 左：タブレット（スライド） -->
                 <div class="tablet">
-                    <img src="img/img-slide-01-new.png" class="slide active" data-slide="1">
-                    <img src="img/img-slide-03-new.png" class="slide" data-slide="2">
-                    <img src="img/img-slide-02-new.png" class="slide" data-slide="3">
-                    <img src="img/img-slide-01-new.png" class="slide" data-slide="4">
-                    <img src="img/img-slide-03-new.png" class="slide" data-slide="5">
+                    <img src="img/img-slide-01-20251223.png" class="slide active" data-slide="1">
+                    <img src="img/img-slide-03-20251223.png" class="slide" data-slide="2">
+                    <img src="img/img-slide-02-20251223.png" class="slide" data-slide="3">
+                    <img src="img/img-slide-01-20251223.png" class="slide" data-slide="4">
+                    <img src="img/img-slide-03-20251223.png" class="slide" data-slide="5">
                 </div>
 
                 <!-- 右：テキストリンク -->
@@ -667,10 +666,8 @@
             const iframe = document.getElementById('diagnosisFrame');
             const menuButton = document.querySelector('.drawer-hamburger.menu.sp');
 
-            // iframeのソースを設定（常にリセットパラメータ付き）
-            const resetUrl = DIAGNOSIS_URL + (DIAGNOSIS_URL.includes('?') ? '&' : '?') + 'reset=true';
-            console.log('🔄 リセットパラメータ付きURLを設定:', resetUrl);
-            iframe.src = resetUrl;
+            // iframeのソースを設定
+            iframe.src = DIAGNOSIS_URL;
 
             // モーダル表示
             modal.style.display = 'block';
@@ -699,13 +696,10 @@
                 menuButton.style.display = 'block';
             }
 
-            // iframeを完全にリセット（メモリリーク防止 + 状態クリア）
-            iframe.src = 'about:blank';
-            setTimeout(() => {
-                iframe.src = '';
-            }, 100);
+            // iframeをリセット（メモリリーク防止）
+            iframe.src = '';
 
-            console.log('✅ モーダルが閉じられ、iframeがリセットされました');
+            console.log('✅ モーダルが閉じられました');
         }
 
         // 診断完了時のメッセージ受信

@@ -30,7 +30,7 @@ const initialFormData: FormData = {
   termsAgreed: false,
   q2: '',
   q3: '',
-  q3_2: '',
+  q3_2: [],
   q3_3: '',
   q4: '',
   q5: '',
@@ -143,7 +143,9 @@ export function TalentCastingForm() {
     }
 
     if (step === 4) {
-      if (!formData.q3_2) newErrors.q3_2 = '目的を選択してください';
+      if (!formData.q3_2 || formData.q3_2.length === 0) {
+        newErrors.q3_2 = '目的を1つ以上選択してください';
+      }
     }
 
     if (step === 5) {
@@ -244,7 +246,7 @@ export function TalentCastingForm() {
           const transformedFormData = {
             industry: formData.q2,
             target_segments: formData.q3,
-            purpose: formData.q3_2,
+            purpose: formData.q3_2, // 配列で送信
             budget: formData.q3_3,
             company_name: formData.q4,
             contact_name: formData.q5,

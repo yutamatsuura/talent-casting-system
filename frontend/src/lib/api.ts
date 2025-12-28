@@ -14,7 +14,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8
 interface MatchingApiRequest {
   industry: string;
   target_segments: string;
-  purpose: string;
+  purpose: string[];
   budget: string;
   company_name: string;
   email: string;

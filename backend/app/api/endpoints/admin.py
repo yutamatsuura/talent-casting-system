@@ -81,17 +81,39 @@ async def convert_matching_results_to_csv_format(
             return default
 
     for talent in matching_results:
-        account_id = talent['account_id']
+        # DiagnosisResultオブジェクトと辞書の両方に対応
+        if hasattr(talent, 'talent_account_id'):
+            # DiagnosisResultオブジェクトの場合
+            account_id = talent.talent_account_id
+            talent_name = talent.talent_name
+            talent_category = talent.talent_category
+            ranking = talent.ranking
+            matching_score = talent.matching_score
+            # DiagnosisResultには以下のフィールドが存在しない
+            base_power_score = 0
+            image_adjustment = 0
+            reflected_score = matching_score
+        else:
+            # 辞書の場合（通常のマッチング結果）
+            account_id = talent['account_id']
+            talent_name = talent.get('name', '')
+            talent_category = talent.get('category', '')
+            ranking = talent.get('ranking', 0)
+            matching_score = talent.get('matching_score', 0)
+            base_power_score = talent.get('base_power_score', 0)
+            image_adjustment = talent.get('image_adjustment', 0)
+            reflected_score = talent.get('reflected_score', matching_score)
+
         additional = additional_data.get(account_id, {})
 
         detailed_talent = OrderedDict([
-            ("タレント名", talent.get('name', additional.get('full_name', f"タレント{talent.get('ranking', 0)}"))),
-            ("カテゴリー", additional.get('act_genre', 'タレント')),
+            ("タレント名", talent_name or additional.get('full_name', f"タレント{ranking}")),
+            ("カテゴリー", talent_category or additional.get('act_genre', 'タレント')),
             ("年間最低金額", safe_float(additional.get('money_min_one_year'))),
             ("年間最高金額", safe_float(additional.get('money_max_one_year'))),
             ("VR人気度", round(safe_float(additional.get('vr_popularity')), 1)),
             ("TPRスコア", round(safe_float(additional.get('tpr_power_score')), 1)),
-            ("従来スコア", round(safe_float(talent.get('base_power_score')), 1)),
+            ("従来スコア", round(safe_float(base_power_score), 1)),
             ("おもしろさ", round(safe_float(additional.get('image_funny')), 1)),
             ("清潔感", round(safe_float(additional.get('image_clean')), 1)),
             ("個性的な", round(safe_float(additional.get('image_unique')), 1)),
@@ -100,9 +122,9 @@ async def convert_matching_results_to_csv_format(
             ("カッコいい", round(safe_float(additional.get('image_cool')), 1)),
             ("大人の魅力", round(safe_float(additional.get('image_mature')), 1)),
             ("従来順位", 0),  # 後で計算
-            ("業種別イメージ", round(safe_float(talent.get('image_adjustment')), 1)),
-            ("最終スコア", round(safe_float(talent.get('reflected_score')), 3)),
-            ("最終順位", talent.get('ranking', 0))
+            ("業種別イメージ", round(safe_float(image_adjustment), 1)),
+            ("最終スコア", round(safe_float(reflected_score), 3)),
+            ("最終順位", ranking)
         ])
         detailed_results.append(detailed_talent)
 
@@ -151,12 +173,27 @@ async def get_form_submissions(
                 except:
                     preferred_genres = []
 
+            # purposeフィールドのJSON解析（Unicodeエスケープ対処）
+            purpose_display = ""
+            purpose_raw = getattr(submission, 'purpose', None)
+            if purpose_raw:
+                try:
+                    import json
+                    purpose_list = json.loads(purpose_raw)
+                    if isinstance(purpose_list, list):
+                        purpose_display = ", ".join(purpose_list)
+                    else:
+                        purpose_display = str(purpose_raw)
+                except (json.JSONDecodeError, TypeError):
+                    # JSON解析失敗時は元の値をそのまま使用
+                    purpose_display = str(purpose_raw)
+
             submissions_data.append({
                 "id": submission.id,
                 "session_id": submission.session_id,
                 "industry": submission.industry,
                 "target_segment": submission.target_segment,
-                "purpose": getattr(submission, 'purpose', None),
+                "purpose": purpose_display,
                 "budget_range": submission.budget_range,
                 "company_name": submission.company_name,
                 "email": submission.email,
@@ -311,12 +348,26 @@ async def export_form_data_csv(
         # 辞書形式に変換
         export_data = []
         for row in rows:
+            # purposeフィールドのJSON解析（Unicodeエスケープ対処）
+            purpose_display = ""
+            if row.purpose:
+                try:
+                    import json
+                    purpose_list = json.loads(row.purpose)
+                    if isinstance(purpose_list, list):
+                        purpose_display = ", ".join(purpose_list)
+                    else:
+                        purpose_display = str(row.purpose)
+                except (json.JSONDecodeError, TypeError):
+                    # JSON解析失敗時は元の値をそのまま使用
+                    purpose_display = str(row.purpose)
+
             export_data.append({
                 "id": row.id,
                 "session_id": row.session_id,
                 "industry": row.industry,
                 "target_segment": row.target_segment,
-                "purpose": row.purpose,
+                "purpose": purpose_display,
                 "budget_range": row.budget_range,
                 "company_name": row.company_name,
                 "email": row.email,
@@ -575,7 +626,7 @@ async def get_submission_diagnosis(
                     "cool_score": additional_data.get("image_cool", 0),
                     "mature_score": additional_data.get("image_mature", 0),
                     "previous_ranking": additional_data.get("previous_ranking", 0),
-                    "industry_image_score": round(float(result.image_adjustment), 1) if result.image_adjustment else 0,
+                    "industry_image_score": 0,  # DiagnosisResultにはimage_adjustmentがないため0固定
                 })
 
             except Exception as e:
@@ -651,16 +702,38 @@ async def get_diagnosis_results_for_csv(
         from app.api.endpoints.matching import execute_matching_logic, get_matching_parameters, apply_recommended_talents_integration
         from app.schemas.matching import MatchingFormData
 
+        # preferred_genresをJSONからリストに変換
+        preferred_genres = None
+        if submission.preferred_genres:
+            try:
+                import json
+                preferred_genres = json.loads(submission.preferred_genres)
+            except (json.JSONDecodeError, TypeError):
+                preferred_genres = []
+
+        # purposeをJSONからリストに変換
+        purpose = []
+        if submission.purpose:
+            try:
+                import json
+                purpose = json.loads(submission.purpose)
+                if not isinstance(purpose, list):
+                    purpose = [submission.purpose]  # 文字列の場合はリストに変換
+            except (json.JSONDecodeError, TypeError):
+                purpose = [submission.purpose]  # JSON解析失敗時は文字列として扱いリスト化
+
         # FormSubmissionデータをMatchingFormDataに変換
         form_data = MatchingFormData(
             industry=submission.industry,
             target_segments=submission.target_segment,
-            purpose=submission.purpose,
+            purpose=purpose,
             budget=submission.budget_range,
             company_name=submission.company_name,
             email=submission.email,
             contact_name=submission.contact_name,
             phone=submission.phone,
+            genre_preference=submission.genre_preference or "希望ジャンルなし",
+            preferred_genres=preferred_genres,
             session_id=submission.session_id
         )
 
@@ -798,5 +871,115 @@ async def get_additional_talent_data_for_csv(
     except Exception as e:
         print(f"❌ タレント追加データ取得エラー (account_id: {account_id}): {e}")
         return {}
+
+
+@router.get(
+    "/csv-download/{session_id}",
+    summary="セッションIDによる診断結果CSV ダウンロード（ユーザー用）"
+)
+async def download_csv_by_session(
+    session_id: str,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    セッションIDを使って診断結果をCSV形式でダウンロード（フロントエンド用）
+    """
+    try:
+        # セッションIDからフォーム送信IDを取得
+        query = select(FormSubmission).where(FormSubmission.session_id == session_id)
+        result = await db.execute(query)
+        submission = result.scalar_one_or_none()
+
+        if not submission:
+            raise HTTPException(
+                status_code=404,
+                detail=f"セッションID {session_id} に対応するフォーム送信が見つかりません"
+            )
+
+        # 診断結果の存在確認
+        diagnosis_query = select(DiagnosisResult).where(
+            DiagnosisResult.form_submission_id == submission.id
+        )
+        diagnosis_result = await db.execute(diagnosis_query)
+        diagnosis_count = len(diagnosis_result.all())
+
+        if diagnosis_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="この送信に対する診断結果がまだ記録されていません。時間をおいて再度お試しください。"
+            )
+
+        # 既存のCSV取得ロジックを利用
+        csv_data = await get_diagnosis_results_for_csv(submission.id, db)
+
+        # CSVレスポンスを生成
+        from fastapi.responses import Response
+        import io
+        import csv
+
+        # CSV文字列を生成
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # ヘッダー行
+        headers = [
+            "順位", "タレント名", "カテゴリ", "事務所", "マッチングスコア",
+            "基礎パワー得点", "VR人気度", "TPRパワー", "イメージ調整",
+            "清潔感", "独自性", "信頼性", "可愛らしさ", "クール", "成熟度"
+        ]
+        writer.writerow(headers)
+
+        # データ行
+        for talent in csv_data.get("results", []):
+            writer.writerow([
+                talent.get("ranking", ""),
+                talent.get("talent_name", ""),
+                talent.get("talent_category", ""),
+                talent.get("company_name", ""),
+                talent.get("matching_score", ""),
+                talent.get("base_power_score", ""),
+                talent.get("vr_popularity", ""),
+                talent.get("tpr_power", ""),
+                talent.get("image_adjustment", ""),
+                talent.get("image_clean", ""),
+                talent.get("image_unique", ""),
+                talent.get("image_trustworthy", ""),
+                talent.get("image_cute", ""),
+                talent.get("image_cool", ""),
+                talent.get("image_mature", "")
+            ])
+
+        csv_content = output.getvalue()
+        output.close()
+
+        # ファイル名生成（企業名 + 日時）
+        import datetime
+        import urllib.parse
+        now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        company_name = submission.company_name or "診断結果"
+        filename = f"{company_name}_タレント診断結果_{now}.csv"
+
+        # ASCII安全なファイル名も作成
+        ascii_filename = f"talent_diagnosis_{now}.csv"
+
+        # レスポンス返却（RFC 5987準拠のファイル名エンコーディング）
+        return Response(
+            content=csv_content.encode('utf-8-sig'),  # BOM付きでExcel対応
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{ascii_filename}"; filename*=UTF-8\'\'{urllib.parse.quote(filename)}',
+                "Content-Type": "text/csv; charset=utf-8"
+            }
+        )
+
+    except HTTPException:
+        # HTTPExceptionは再発生
+        raise
+    except Exception as e:
+        print(f"❌ CSV ダウンロードエラー (session_id: {session_id}): {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="CSV ダウンロード中にエラーが発生しました"
+        )
 
 

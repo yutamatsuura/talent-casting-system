@@ -17,7 +17,8 @@ class UltraOptimizedMatchingQueries:
         target_segment_id: int,
         image_item_ids: List[int],
         industry_name: str,
-        is_alcohol_industry: bool = False
+        is_alcohol_industry: bool = False,
+        is_unlimited_budget: bool = False
     ) -> List[Dict[str, Any]]:
         """
         究極統合クエリによる完全1回DB接続マッチング処理
@@ -38,12 +39,22 @@ class UltraOptimizedMatchingQueries:
             FROM m_account ma
             LEFT JOIN m_talent_act mta ON ma.account_id = mta.account_id
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
+              AND mta.account_id IS NOT NULL  -- 未登録タレントを除外
               AND (
-                -- m_talent_actデータがない場合（未登録）も予算制限なしで通過
-                mta.account_id IS NULL
-                -- または予算データがあって上限以下の場合
-                OR mta.money_max_one_year IS NULL
-                OR ($1 = 'Infinity'::float8 OR mta.money_max_one_year <= $1)
+                -- パターン1: 両方設定済み（MIN有・MAX有）→ ユーザー予算がMIN以上で通過
+                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NOT NULL
+                 AND $1 >= mta.money_min_one_year)
+                OR
+                -- パターン2: MIN有・MAX無 → ユーザー予算がMIN以上で通過
+                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NULL
+                 AND $1 >= mta.money_min_one_year)
+                OR
+                -- パターン3: MIN無・MAX有 → ユーザー予算がMAX以上で通過
+                (mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NOT NULL
+                 AND $1 >= mta.money_max_one_year)
+                OR
+                -- パターン4: 「1億円以上」選択時のみ両方NULL → 通過
+                ($6 = true AND mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NULL)
               ) AND (
                 -- アルコール業界の場合のみ25歳以上フィルタ適用（$4で制御）
                 $4 = false OR (
@@ -213,7 +224,8 @@ class UltraOptimizedMatchingQueries:
                 target_segment_id,
                 image_item_ids,
                 is_alcohol_industry,
-                industry_name
+                industry_name,
+                is_unlimited_budget
             )
             return [dict(row) for row in result]
         finally:
@@ -320,9 +332,12 @@ class UltraOptimizedMatchingQueries:
         if budget_max <= 0:
             raise ValueError("無効な予算区分です")
 
+        # 「1億円以上」選択時判定（金額NULLタレント通過用）
+        is_unlimited_budget = budget_range == "1億円以上"
+
         # 2. 究極統合クエリでマッチング実行（1回のDB接続で完了）
         talent_results = await UltraOptimizedMatchingQueries.execute_complete_unified_matching_query(
-            budget_max, target_segment_id, image_item_ids, industry_name, is_alcohol
+            budget_max, target_segment_id, image_item_ids, industry_name, is_alcohol, is_unlimited_budget
         )
 
         # 3. STEP 5: マッチングスコア振り分け（メモリ内処理）
