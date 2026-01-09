@@ -16,6 +16,8 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <link rel="stylesheet"
         href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=Great+Vibes&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="./css/style-base.css">
     <link rel="stylesheet" type="text/css" href="./css/style.css">
     <script type="text/javascript" src="./js/iscroll.js"></script>
@@ -27,6 +29,121 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
     <!-- slide -->
     <script type="text/javascript" src="./js/common.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const canvases = document.querySelectorAll(".aiCanvas");
+
+            canvases.forEach((canvas) => {
+                const ctx = canvas.getContext("2d");
+                let time = 0;
+                let animationId;
+                let canvasSize = 0;
+
+                function resizeCanvas() {
+                    const parent = canvas.parentElement;
+                    if (!parent) return;
+
+                    const size = parent.clientWidth;
+                    const dpr = window.devicePixelRatio || 1;
+
+                    canvas.width = size * dpr;
+                    canvas.height = size * dpr;
+                    canvas.style.width = size + "px";
+                    canvas.style.height = size + "px";
+
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.scale(dpr, dpr);
+
+                    canvasSize = size;
+                }
+
+                resizeCanvas();
+                window.addEventListener("resize", resizeCanvas);
+
+                function drawWavyCircle(
+                    cx,
+                    cy,
+                    baseRadius,
+                    waveAmplitude,
+                    waveFrequency,
+                    phase,
+                    opacity,
+                    lineWidth
+                ) {
+                    const points = 360;
+                    ctx.beginPath();
+
+                    for (let i = 0; i <= points; i++) {
+                        const angle = (Math.PI * 2 / points) * i;
+                        const wave =
+                            Math.sin(angle * waveFrequency + phase) * waveAmplitude;
+
+                        const radius = baseRadius + wave;
+                        const x = cx + Math.cos(angle) * radius;
+                        const y = cy + Math.sin(angle) * radius;
+
+                        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                    }
+
+                    ctx.closePath();
+                    ctx.strokeStyle = `rgba(255,255,255,${opacity})`;
+                    ctx.lineWidth = lineWidth;
+                    ctx.stroke();
+                }
+
+                function animate() {
+                    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+                    const cx = canvasSize / 2;
+                    const cy = canvasSize / 2;
+                    const maxRadius = canvasSize * 0.42;
+
+                    /* はみ出し防止 */
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, maxRadius * 1.05, 0, Math.PI * 2);
+                    ctx.clip();
+
+                    const circles = [
+                        { r: 1.0, a: 0.03, f: 8, s: 1.2, o: 0.15, w: 1 },
+                        { r: 0.92, a: 0.025, f: 6, s: -1.0, o: 0.2, w: 1.2 },
+                        { r: 0.85, a: 0.035, f: 7, s: 1.5, o: 0.25, w: 1.3 },
+                        { r: 0.78, a: 0.02, f: 5, s: -0.8, o: 0.3, w: 1.5 },
+                        { r: 0.7, a: 0.03, f: 6, s: 1.3, o: 0.35, w: 1.6 },
+                        { r: 0.62, a: 0.025, f: 8, s: -1.1, o: 0.45, w: 1.8 },
+                        { r: 0.55, a: 0.02, f: 5, s: 0.9, o: 0.55, w: 2 }
+                    ];
+
+                    circles.forEach(c => {
+                        drawWavyCircle(
+                            cx,
+                            cy,
+                            maxRadius * c.r,
+                            maxRadius * c.a,
+                            c.f,
+                            time * c.s,
+                            c.o,
+                            c.w
+                        );
+                    });
+
+                    ctx.restore();
+
+                    time += 0.03;
+                    animationId = requestAnimationFrame(animate);
+                }
+
+                animate();
+
+                /* ページ離脱時 */
+                window.addEventListener("beforeunload", () => {
+                    cancelAnimationFrame(animationId);
+                });
+            });
+        });
+    </script>
 
     <!-- iframe Modal Styles -->
     <style>
@@ -176,8 +293,22 @@
 <body id="top" class="drawer drawer--top">
     <header class="m-lr">
         <div class="header-main m-lr flex">
-            <div class="logo">
-                <a href="./"><img src="img/logo.png" alt="e-Sprit"></a>
+            <div class="logo flex">
+                <div class="logo-variant">
+                    <div class="logo-with-tagline">
+                        <div class="tagline-top">キャスティングのリーディングカンパニー</div>
+                        <div class="logo-container">
+                            <div class="main-logo">
+                                <img src="img/logo.svg" alt="">
+                            </div>
+                            <div class="separator"></div>
+                            <div class="since-emblem">
+                                <div class="since-text">Since</div>
+                                <div class="since-year">2000</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="navi f-700 pc">
                 <ul class="flex f-s">
@@ -242,9 +373,12 @@
                     <strong class="d-block f-s f-700 c-blue">25年の経験&データ × AIで<br>スピーディーかつ、ハイクオリティなご提案</strong>
                     <h1 class="f-h1 d-block f-700">自社の広告に<br>最適なタレントは誰？</h1>
                     <div class="fv-main-shindan">
-                        <div class="fv-main-shindan-box flex">
+                        <div class="fv-main-shindan-box cta-area flex">
                             <div class="fv-main-shindan-box-left">
-                                <img src="img/img-shindan.png" alt="">
+                                <div class="ai-canvas-wrap">
+                                    <canvas class="aiCanvas"></canvas>
+                                    <div class="f-700 txt">完全無料<br>60秒AI診断</div>
+                                </div>
                             </div>
                             <div class="fv-main-shindan-box-right">
                                 <strong class="d-block f-m f-700">e-Spirit AIエージェント</strong>
@@ -253,7 +387,7 @@
                                     タレントリスト提供サービスあり。
                                 </p>
                                 <div class="btn">
-                                    <a href="http://localhost:3248/diagnosis" class="f-s">無料で診断する</a>
+                                    <a href="http://localhost:3248/diagnosis" class="f-s"><span>無料で診断する</span></a>
                                 </div>
                             </div>
                         </div>
@@ -359,9 +493,12 @@
             </div>
         </section>
         <section class="shindan m-lr m-b5">
-            <div class="shindan-box m-lr flex">
+            <div class="shindan-box cta-area m-lr flex">
                 <div class="shindan-box-left">
-                    <img src="img/img-shindan.png" alt="">
+                    <div class="ai-canvas-wrap">
+                        <canvas class="aiCanvas"></canvas>
+                        <div class="f-700 f-xl txt">完全無料<br>60秒AI診断</div>
+                    </div>
                 </div>
                 <div class="shindan-box-right">
 
@@ -371,7 +508,7 @@
                         タレントリスト提供サービスあり。
                     </p>
                     <div class="btn">
-                        <a href="http://localhost:3248/diagnosis" class="f-s">無料で診断する</a>
+                        <a href="http://localhost:3248/diagnosis" class="f-s"><span>無料で診断する</span></a>
                     </div>
                 </div>
             </div>
@@ -500,9 +637,12 @@
             </div>
         </section>
         <section class="shindan m-lr m-b5">
-            <div class="shindan-box m-lr flex">
+            <div class="shindan-box cta-area m-lr flex">
                 <div class="shindan-box-left">
-                    <img src="img/img-shindan.png" alt="">
+                    <div class="ai-canvas-wrap">
+                        <canvas class="aiCanvas"></canvas>
+                        <div class="f-700 f-xl txt">完全無料<br>60秒AI診断</div>
+                    </div>
                 </div>
                 <div class="shindan-box-right">
 
@@ -512,7 +652,7 @@
                         タレントリスト提供サービスあり。
                     </p>
                     <div class="btn">
-                        <a href="http://localhost:3248/diagnosis" class="f-s">無料で診断する</a>
+                        <a href="http://localhost:3248/diagnosis" class="f-s"><span>無料で診断する</span></a>
                     </div>
                 </div>
             </div>
@@ -573,9 +713,12 @@
             </div>
         </section>
         <section class="shindan m-lr m-b5">
-            <div class="shindan-box m-lr flex">
+            <div class="shindan-box cta-area m-lr flex">
                 <div class="shindan-box-left">
-                    <img src="img/img-shindan.png" alt="">
+                    <div class="ai-canvas-wrap">
+                        <canvas class="aiCanvas"></canvas>
+                        <div class="f-700 f-xl txt">完全無料<br>60秒AI診断</div>
+                    </div>
                 </div>
                 <div class="shindan-box-right">
 
@@ -585,9 +728,66 @@
                         タレントリスト提供サービスあり。
                     </p>
                     <div class="btn">
-                        <a href="http://localhost:3248/diagnosis" class="f-s">無料で診断する</a>
+                        <a href="http://localhost:3248/diagnosis" class="f-s cta-frame"><span>無料で診断する</span></a>
                     </div>
                 </div>
+            </div>
+        </section>
+        <section class="company-overview">
+            <div class="container">
+                <h2 class="section-title f-l f-700 d-block t-center">会社概要</h2>
+
+                <table class="overview-table f-s">
+                    <tr>
+                        <th>社名</th>
+                        <td>株式会社イー・スピリット<br class="sp">（英文社名：e-Spirit Inc.）</td>
+                    </tr>
+                    <tr>
+                        <th>所在地</th>
+                        <td>〒150-0002 <br class="sp">東京都渋谷区渋谷1-7-7 <br class="sp">住友不動産青山通ビル13F</td>
+                    </tr>
+                    <tr>
+                        <th>TEL</th>
+                        <td>03-5464-3737</td>
+                    </tr>
+                    <tr>
+                        <th>設立</th>
+                        <td>2000年7月</td>
+                    </tr>
+                    <tr>
+                        <th>資本金</th>
+                        <td>2,500万円</td>
+                    </tr>
+                    <tr>
+                        <th>代表取締役社長</th>
+                        <td>足立 茂樹</td>
+                    </tr>
+                    <tr>
+                        <th>業務内容</th>
+                        <td>
+                            <ul>
+                                <li>広告媒体（マスメディア・OOH等）の販売</li>
+                                <li>タレント・モデル・一般消費者のキャスティング</li>
+                                <li>Webサイトの企画・制作・運営</li>
+                                <li>グラフィックデザイン</li>
+                                <li>イベント企画・運営・実施</li>
+                                <li>上記付随業務</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>許可</th>
+                        <td>一般労働者派遣事業許可：般13-04-0708</td>
+                    </tr>
+                    <tr>
+                        <th>顧問契約先</th>
+                        <td>
+                            顧問弁護士：八代国際法律事務所 八代英輝<br>
+                            顧問税理士：税理士法人 総合会計事務所<br>
+                            顧問社労士：社会保険労務士法人 アトラス
+                        </td>
+                    </tr>
+                </table>
             </div>
         </section>
     </main>
@@ -610,7 +810,7 @@
     <footer>
         <div class="footer-main m-lr">
             <div class="footer-main-flex flex">
-                <div class="footer-main-logo"><img src="img/logo.png" alt=""></div>
+                <div class="footer-main-logo"><img src="img/logo.svg" alt=""></div>
                 <div class="footer-main-link f-s t-center">
                     <a href="https://www.e-spirit.jp/privacy" target="_blank" class="c-blue">プライバシーポリシー<i
                             class="las la-arrow-right"></i></a><a href="https://www.e-spirit.jp/company" target="_blank"

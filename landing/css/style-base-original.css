@@ -492,6 +492,39 @@ body {
             animation: scroll 50s linear infinite;
   }
 }
+.cta-area {
+  position: relative;
+  /* 動くグラデーション */
+  background: -webkit-linear-gradient(330deg, #004c99, #0066cc, #0099ff, #0066cc, #004c99);
+  background: linear-gradient(120deg, #004c99, #0066cc, #0099ff, #0066cc, #004c99);
+  background-size: 400% 400%;
+  -webkit-animation: bgMove 10s ease infinite;
+          animation: bgMove 10s ease infinite;
+}
+
+@-webkit-keyframes bgMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes bgMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 @media (max-width: 739px) {
   .pc {
     display: none;
