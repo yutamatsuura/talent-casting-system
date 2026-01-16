@@ -18,10 +18,15 @@ from app.schemas.matching import (
 )
 from app.db.connection import get_asyncpg_connection, release_asyncpg_connection
 from app.models import FormSubmission, DiagnosisResult
+from app.core.config import settings
 from app.api.endpoints.recommended_talents import get_recommended_talents_for_matching
+from app.services.email_service import EmailService
+from app.services.pdf_generator_weasy import WeasyPDFGenerator
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.connection import get_db_session
+from fastapi.responses import StreamingResponse
+import io
 
 router = APIRouter()
 
@@ -377,9 +382,9 @@ async def save_form_submission(form_data: MatchingFormData, request: Request) ->
             INSERT INTO form_submissions (
                 session_id, industry, target_segment, purpose, budget_range,
                 company_name, contact_name, email, phone,
-                genre_preference, preferred_genres,
+                genre_preference, preferred_genres, email_consent, email_consent_timestamp,
                 ip_address, user_agent
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             """,
             session_id,
             form_data.industry,
@@ -392,6 +397,8 @@ async def save_form_submission(form_data: MatchingFormData, request: Request) ->
             form_data.phone,
             form_data.genre_preference,
             preferred_genres_json,
+            form_data.email_consent,
+            datetime.now() if form_data.email_consent else None,
             client_ip,
             user_agent
         )
@@ -509,7 +516,7 @@ async def get_recommended_talents_batch(
 
 async def get_matching_parameters(
     budget_name: str, target_segment_name: str, industry_name: str
-) -> Tuple[float, int, List[int]]:
+) -> Tuple[float, float, int, List[int]]:
     """マッチングパラメータを一括取得（Phase A3最適化: メモリキャッシュ付き）"""
     # キャッシュキーを生成
     cache_key = f"params:{budget_name}:{target_segment_name}:{industry_name}"
@@ -523,10 +530,11 @@ async def get_matching_parameters(
         # 予算区分の文字列を正規化
         normalized_budget_name = normalize_budget_range_string(budget_name)
 
-        # Phase A2最適化: 3つのクエリを1つのJOINクエリに統合
+        # Phase A2最適化: 3つのクエリを1つのJOINクエリに統合（min_amountも取得）
         result_row = await conn.fetchrow(
             """
             SELECT
+                br.min_amount,
                 br.max_amount,
                 ts.target_segment_id,
                 i.required_image_id
@@ -553,11 +561,12 @@ async def get_matching_parameters(
             # 全イメージ項目 (1-7) を対象
             image_item_ids = [1, 2, 3, 4, 5, 6, 7]
 
-        max_budget = float(result_row["max_amount"] or float("inf"))
+        min_budget = float(result_row["min_amount"] or 0)  # NULLの場合は0（下限なし）
+        max_budget = float(result_row["max_amount"] or 999999999999)  # NULLの場合は999,999,999,999円（上限なし）
         target_segment_id = result_row["target_segment_id"]
 
         # Phase A3最適化: 結果をメモリキャッシュに保存（TTL無し、静的データのため）
-        result = (max_budget, target_segment_id, image_item_ids)
+        result = (min_budget, max_budget, target_segment_id, image_item_ids)
         _parameter_cache[cache_key] = result
 
         return result
@@ -567,6 +576,7 @@ async def get_matching_parameters(
 
 async def execute_matching_logic(
     form_data: MatchingFormData,
+    min_budget: float,
     max_budget: float,
     target_segment_id: int,
     image_item_ids: List[int],
@@ -578,8 +588,8 @@ async def execute_matching_logic(
         # アルコール業界かどうか判定
         is_alcohol_industry = form_data.industry == "アルコール飲料"
 
-        # 「1億円以上」選択時判定（金額NULLタレント通過用）
-        is_unlimited_budget = form_data.budget == "1億円以上"
+        # 「5,000万円以上」選択時判定（金額NULLタレント通過用）
+        is_unlimited_budget = form_data.budget == "5,000万円以上"
 
         # おすすめタレントID取得（予算フィルタリング除外のため）
         recommended_talents = await get_recommended_talents_for_matching(form_data.industry)
@@ -588,32 +598,28 @@ async def execute_matching_logic(
         # STEP 1-5: 5段階マッチングロジック統合クエリ（アルコール業界年齢フィルタ対応）
         query = """
         WITH step0_budget_filter AS (
-            -- STEP 0: 予算フィルタリング（MIN/MAX条件チェック + 未登録除外） + アルコール業界年齢フィルタリング
+            -- STEP 0: 予算フィルタリング（計算列インデックス活用版） + アルコール業界年齢フィルタリング
+            -- $1 = min_budget (下限、NULLの場合は0)
+            -- $6 = max_budget (上限、NULLの場合は無限大)
             SELECT DISTINCT ma.account_id, ma.name_full_for_matching as name, ma.last_name_kana, ma.act_genre, ma.company_name
             FROM m_account ma
             LEFT JOIN m_talent_act mta ON ma.account_id = mta.account_id
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
               AND mta.account_id IS NOT NULL  -- 未登録タレントを除外
               AND (
-                -- パターン1: 両方設定済み（MIN有・MAX有）→ タレント最高金額がユーザー予算以下で通過
-                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NOT NULL
-                 AND mta.money_max_one_year <= $1)
+                -- 超高速化: 計算列インデックスを活用したシンプルな範囲チェック
+                -- money_representative_value = COALESCE(money_max_one_year, money_min_one_year)
+                (mta.money_representative_value IS NOT NULL
+                 AND mta.money_representative_value >= $1
+                 AND mta.money_representative_value < $6)
                 OR
-                -- パターン2: MIN有・MAX無 → ユーザー予算がタレント最低要求以上で通過
-                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NULL
-                 AND $1 >= mta.money_min_one_year)
-                OR
-                -- パターン3: MIN無・MAX有 → タレント最高金額がユーザー予算以下で通過
-                (mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NOT NULL
-                 AND mta.money_max_one_year <= $1)
-                OR
-                -- パターン4: 「1億円以上」選択時のみ両方NULL → 通過
-                ($5 = true AND mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NULL)
+                -- 両方NULL: 「5,000万円以上」選択時のみ通過
+                (mta.money_representative_value IS NULL AND $5 = true)
               ) AND (
                 -- アルコール業界の場合のみ25歳以上フィルタ適用（$4で制御）
                 $4 = false OR (
-                    ma.birthday IS NOT NULL
-                    AND (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM ma.birthday)) >= 25
+                    ma.birthday IS NULL OR  -- 生年月日がない場合は通過
+                    EXTRACT(YEAR FROM AGE(CURRENT_DATE, ma.birthday)) >= 25
                 )
               )
         ),
@@ -718,7 +724,7 @@ async def execute_matching_logic(
         ORDER BY r.reflected_score DESC, r.base_power_score DESC, r.account_id
         """
 
-        rows = await conn.fetch(query, max_budget, target_segment_id, image_item_ids, is_alcohol_industry, is_unlimited_budget)
+        rows = await conn.fetch(query, min_budget, target_segment_id, image_item_ids, is_alcohol_industry, is_unlimited_budget, max_budget)
         return [dict(row) for row in rows]
     finally:
         await release_asyncpg_connection(conn)
@@ -872,13 +878,13 @@ async def post_matching(form_data: MatchingFormData, request: Request, backgroun
         )
 
         # 並列実行
-        session_id, (max_budget, target_segment_id, image_item_ids) = await asyncio.gather(
+        session_id, (min_budget, max_budget, target_segment_id, image_item_ids) = await asyncio.gather(
             session_id_task, params_task
         )
 
         # 5段階マッチングロジック実行（STEP 0-4）
         raw_results = await execute_matching_logic(
-            form_data, max_budget, target_segment_id, image_item_ids
+            form_data, min_budget, max_budget, target_segment_id, image_item_ids
         )
 
         # STEP 5.5: おすすめタレント統合（マッチングロジックの整合性保持）
@@ -921,6 +927,24 @@ async def post_matching(form_data: MatchingFormData, request: Request, backgroun
         # ★ 診断結果をデータベースに保存
         await save_diagnosis_results(session_id, talent_results, db)
 
+        # ★ 診断完了メール送信
+        email_service = EmailService()
+        if email_service.is_configured() and form_data.email and form_data.email_consent:
+            try:
+                # PDFダウンロードURL生成
+                pdf_download_url = f"{settings.backend_url}/api/pdf-download/{session_id}"
+
+                await email_service.send_diagnosis_completion_email(
+                    to_email=form_data.email,
+                    company_name=form_data.company_name or "お客様",
+                    contact_name=form_data.contact_name,
+                    pdf_download_url=pdf_download_url,
+                    session_id=session_id
+                )
+                logger.info(f"診断完了メール送信成功: session_id={session_id}, email={form_data.email}")
+            except Exception as e:
+                logger.error(f"診断完了メール送信エラー: session_id={session_id}, error={str(e)}")
+                # メール送信エラーは診断結果レスポンスには影響させない
 
         # 処理時間計算
         processing_time = (time.time() - start_time) * 1000
@@ -1002,6 +1026,23 @@ async def post_matching_optimized(form_data: MatchingFormData, request: Request,
         # ★ 新規追加: 診断結果をデータベースに保存
         await save_diagnosis_results(session_id, talent_results, db)
 
+        # ★ 診断完了メール送信
+        email_service = EmailService()
+        if email_service.is_configured() and form_data.email and form_data.email_consent:
+            try:
+                # PDFダウンロードURL生成
+                pdf_download_url = f"{settings.backend_url}/api/pdf-download/{session_id}"
+
+                await email_service.send_diagnosis_completion_email(
+                    to_email=form_data.email,
+                    company_name=form_data.company_name or "お客様",
+                    contact_name=form_data.contact_name,
+                    pdf_download_url=pdf_download_url,
+                    session_id=session_id
+                )
+                logger.info(f"診断完了メール送信成功 (最適化版): session_id={session_id}, email={form_data.email}")
+            except Exception as e:
+                logger.error(f"診断完了メール送信エラー (最適化版): session_id={session_id}, error={str(e)}")
 
         # 処理時間計算
         processing_time = (time.time() - start_time) * 1000
@@ -1078,6 +1119,23 @@ async def post_matching_ultra_optimized(
         # ★ 新規追加: 診断結果をデータベースに保存
         await save_diagnosis_results(session_id, talent_results, db)
 
+        # ★ 診断完了メール送信
+        email_service = EmailService()
+        if email_service.is_configured() and form_data.email and form_data.email_consent:
+            try:
+                # PDFダウンロードURL生成
+                pdf_download_url = f"{settings.backend_url}/api/pdf-download/{session_id}"
+
+                await email_service.send_diagnosis_completion_email(
+                    to_email=form_data.email,
+                    company_name=form_data.company_name or "お客様",
+                    contact_name=form_data.contact_name,
+                    pdf_download_url=pdf_download_url,
+                    session_id=session_id
+                )
+                logger.info(f"診断完了メール送信成功 (超最適化版): session_id={session_id}, email={form_data.email}")
+            except Exception as e:
+                logger.error(f"診断完了メール送信エラー (超最適化版): session_id={session_id}, error={str(e)}")
 
         # 処理時間計算
         processing_time = (time.time() - start_time) * 1000
@@ -1102,4 +1160,245 @@ async def post_matching_ultra_optimized(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Phase B超最適化マッチング処理中にエラーが発生しました: {str(e)}",
+        )
+
+
+@router.get("/pdf-download/{session_id}", summary="ユーザー向けマスキングPDFダウンロード")
+async def download_diagnosis_pdf(
+    session_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    診断結果のマスキング版PDFをダウンロード
+
+    Args:
+        session_id: 診断セッションID
+        request: FastAPIリクエストオブジェクト
+        db: データベースセッション
+
+    Returns:
+        StreamingResponse: PDFファイル
+    """
+    try:
+        logger.info(f"セッション {session_id}: ユーザー向けPDFダウンロード開始")
+
+        # セッションIDから診断結果を取得
+        form_submission_query = """
+            SELECT id, company_name, contact_name, email, industry, target_segment, budget_range
+            FROM form_submissions
+            WHERE session_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+        """
+
+        conn = await get_asyncpg_connection()
+        try:
+            form_submission_row = await conn.fetchrow(form_submission_query, session_id)
+
+            if not form_submission_row:
+                logger.warning(f"セッション {session_id}: 診断結果が見つかりません")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="診断結果が見つかりません。再度診断を実行してください。"
+                )
+
+            submission_id = form_submission_row['id']
+
+            # target_segment_idを取得
+            target_segment_query = """
+                SELECT target_segment_id
+                FROM target_segments
+                WHERE segment_name = $1
+            """
+            target_segment_row = await conn.fetchrow(target_segment_query, form_submission_row['target_segment'])
+
+            if not target_segment_row:
+                logger.warning(f"セッション {session_id}: target_segment_id が見つかりません")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="ターゲット層IDが見つかりません。"
+                )
+
+            target_segment_id = target_segment_row['target_segment_id']
+
+            # 診断結果を取得（talent_scoresとm_accountからも必要な情報を取得）
+            diagnosis_query = """
+                SELECT
+                    dr.ranking,
+                    dr.matching_score,
+                    dr.talent_name,
+                    dr.talent_category as act_genre,
+                    ts.base_power_score,
+                    ma.image_name,
+                    ma.company_name,
+                    ma.pref_cd,
+                    EXTRACT(YEAR FROM AGE(CURRENT_DATE, ma.birthday)) as age,
+                    CASE
+                        WHEN ma.pref_cd = 1 THEN '北海道'
+                        WHEN ma.pref_cd = 2 THEN '青森県'
+                        WHEN ma.pref_cd = 3 THEN '岩手県'
+                        WHEN ma.pref_cd = 4 THEN '秋田県'
+                        WHEN ma.pref_cd = 5 THEN '宮城県'
+                        WHEN ma.pref_cd = 6 THEN '山形県'
+                        WHEN ma.pref_cd = 7 THEN '福島県'
+                        WHEN ma.pref_cd = 8 THEN '茨城県'
+                        WHEN ma.pref_cd = 9 THEN '栃木県'
+                        WHEN ma.pref_cd = 10 THEN '群馬県'
+                        WHEN ma.pref_cd = 11 THEN '埼玉県'
+                        WHEN ma.pref_cd = 12 THEN '東京都'
+                        WHEN ma.pref_cd = 13 THEN '千葉県'
+                        WHEN ma.pref_cd = 14 THEN '神奈川県'
+                        WHEN ma.pref_cd = 15 THEN '新潟県'
+                        WHEN ma.pref_cd = 16 THEN '富山県'
+                        WHEN ma.pref_cd = 17 THEN '石川県'
+                        WHEN ma.pref_cd = 18 THEN '福井県'
+                        WHEN ma.pref_cd = 19 THEN '長野県'
+                        WHEN ma.pref_cd = 20 THEN '岐阜県'
+                        WHEN ma.pref_cd = 21 THEN '山梨県'
+                        WHEN ma.pref_cd = 22 THEN '静岡県'
+                        WHEN ma.pref_cd = 23 THEN '愛知県'
+                        WHEN ma.pref_cd = 24 THEN '滋賀県'
+                        WHEN ma.pref_cd = 25 THEN '京都府'
+                        WHEN ma.pref_cd = 26 THEN '三重県'
+                        WHEN ma.pref_cd = 27 THEN '奈良県'
+                        WHEN ma.pref_cd = 28 THEN '和歌山県'
+                        WHEN ma.pref_cd = 29 THEN '大阪府'
+                        WHEN ma.pref_cd = 30 THEN '兵庫県'
+                        WHEN ma.pref_cd = 31 THEN '鳥取県'
+                        WHEN ma.pref_cd = 32 THEN '岡山県'
+                        WHEN ma.pref_cd = 33 THEN '島根県'
+                        WHEN ma.pref_cd = 34 THEN '広島県'
+                        WHEN ma.pref_cd = 35 THEN '山口県'
+                        WHEN ma.pref_cd = 36 THEN '香川県'
+                        WHEN ma.pref_cd = 37 THEN '徳島県'
+                        WHEN ma.pref_cd = 38 THEN '愛媛県'
+                        WHEN ma.pref_cd = 39 THEN '高知県'
+                        WHEN ma.pref_cd = 40 THEN '福岡県'
+                        WHEN ma.pref_cd = 41 THEN '大分県'
+                        WHEN ma.pref_cd = 42 THEN '熊本県'
+                        WHEN ma.pref_cd = 43 THEN '佐賀県'
+                        WHEN ma.pref_cd = 44 THEN '長崎県'
+                        WHEN ma.pref_cd = 45 THEN '宮崎県'
+                        WHEN ma.pref_cd = 46 THEN '鹿児島県'
+                        WHEN ma.pref_cd = 47 THEN '沖縄県'
+                        WHEN ma.pref_cd = 99 THEN 'その他'
+                        ELSE '不明'
+                    END as birthplace
+                FROM diagnosis_results dr
+                LEFT JOIN talent_scores ts ON dr.talent_account_id = ts.account_id
+                    AND ts.target_segment_id = $2
+                LEFT JOIN m_account ma ON dr.talent_account_id = ma.account_id
+                WHERE dr.form_submission_id = $1
+                ORDER BY dr.ranking ASC
+            """
+
+            diagnosis_rows = await conn.fetch(diagnosis_query, submission_id, target_segment_id)
+
+            if not diagnosis_rows:
+                logger.warning(f"セッション {session_id}: 診断結果データが見つかりません")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="診断結果データが見つかりません。"
+                )
+
+        finally:
+            await release_asyncpg_connection(conn)
+
+        # タレントデータをPDF生成用形式に変換
+        talent_data = []
+        for row in diagnosis_rows:
+            talent_data.append({
+                'ranking': row['ranking'],
+                'talent_name': row['talent_name'],
+                'act_genre': row['act_genre'] or '',
+                'age': int(row['age']) if row['age'] else None,
+                'birthplace': row['birthplace'] or '',
+                'image_name': row['image_name'] or '画像未設定',
+                'company_name': row['company_name'] or '',
+                'matching_score': row['matching_score'],
+                'base_power_score': row['base_power_score'] or 0
+            })
+
+        # フォーム情報を構築
+        form_info = {
+            'company_name': form_submission_row['company_name'],
+            'industry': form_submission_row['industry'],
+            'target_segment': form_submission_row['target_segment'],
+            'budget_range': form_submission_row['budget_range'],
+        }
+
+        # 業界固有のCTAリンクを取得
+        cta_link = ""
+        try:
+            industry_name = form_submission_row['industry']
+            booking_query = text("""
+                SELECT booking_url
+                FROM industry_booking_links
+                WHERE industry_name = :industry_name
+            """)
+            booking_result = await db.execute(booking_query, {"industry_name": industry_name})
+            booking_link = booking_result.fetchone()
+
+            if booking_link and booking_link.booking_url:
+                cta_link = booking_link.booking_url
+            else:
+                # デフォルトリンクを使用
+                cta_link = "https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm"
+
+            logger.info(f"セッション {session_id}: 業界 '{industry_name}' のCTAリンク取得: {cta_link[:50]}...")
+
+        except Exception as e:
+            logger.warning(f"セッション {session_id}: CTAリンク取得エラー: {e}")
+            # エラーの場合はデフォルトリンクを使用
+            cta_link = "https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm"
+
+        # PDFを生成
+        pdf_generator = WeasyPDFGenerator()
+        if not pdf_generator.is_available():
+            logger.error("PDF生成ライブラリが利用できません")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="PDF生成機能が一時的に利用できません。しばらく経ってから再度お試しください。"
+            )
+
+        pdf_stream = pdf_generator.generate_masked_pdf(talent_data, form_info, cta_link)
+
+        # ファイル名を生成（UTF-8エンコーディング対応）
+        import urllib.parse
+        company_name = form_submission_row['company_name'] or "診断結果"
+        contact_name = form_submission_row['contact_name'] or ""
+
+        # 会社名を安全な文字列に変換
+        safe_company_name = "".join(c for c in company_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+
+        # 担当者名を安全な文字列に変換し、「様」を付加
+        if contact_name:
+            safe_contact_name = "".join(c for c in contact_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            contact_part = f"{safe_contact_name}様"
+        else:
+            contact_part = safe_company_name
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # 日本語ファイル名をUTF-8でエンコード
+        filename_raw = f"AIキャスティング診断結果_{contact_part}_{timestamp}.pdf"
+        filename_encoded = urllib.parse.quote(filename_raw, safe='')
+
+        logger.info(f"セッション {session_id}: PDFダウンロード成功 - {filename_raw}")
+
+        # StreamingResponseでPDFを返却
+        return StreamingResponse(
+            io.BytesIO(pdf_stream.getvalue()),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}"}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"セッション {session_id}: PDFダウンロードエラー: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDFダウンロード中にエラーが発生しました: {str(e)}"
         )

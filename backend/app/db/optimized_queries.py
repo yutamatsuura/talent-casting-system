@@ -117,7 +117,7 @@ class OptimizedMatchingQueries:
         conn = await get_asyncpg_connection()
         try:
             result = await conn.fetchrow(budget_query, normalized_budget_name)
-            return float(result['max_amount'] or float("inf")) if result else 0.0
+            return float(result['max_amount'] or 999999999999) if result else 0.0
         finally:
             await conn.close()
 

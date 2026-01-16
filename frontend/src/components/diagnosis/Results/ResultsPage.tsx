@@ -36,6 +36,10 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
   // CSVダウンロード状態管理
   const [csvDownloading, setCsvDownloading] = useState(false);
 
+  // PDFダウンロード状態管理
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+
+
   // 業界別予約リンク状態管理
   const [bookingUrl, setBookingUrl] = useState<string>('https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm');
 
@@ -173,6 +177,73 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
       alert('CSVダウンロード中にエラーが発生しました。ネットワーク接続を確認して再度お試しください。');
     } finally {
       setCsvDownloading(false);
+    }
+  };
+
+  // PDFダウンロードハンドラー関数
+  const handlePdfDownload = async () => {
+    if (!sessionId) {
+      alert('セッション情報が見つかりません。ページを再読み込みしてお試しください。');
+      return;
+    }
+
+    setPdfDownloading(true);
+
+    try {
+      // PDFダウンロードボタンクリックを記録
+      await trackButtonClick('pdf_download', 'PDFダウンロード');
+
+      // バックエンドからPDFをダウンロード
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8432';
+      const response = await fetch(`${API_BASE_URL}/api/pdf-download/${sessionId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          alert('診断結果が見つかりません。時間をおいて再度お試しください。');
+        } else {
+          alert('PDFダウンロード中にエラーが発生しました。しばらく時間をおいて再度お試しください。');
+        }
+        return;
+      }
+
+      // ファイルダウンロード処理
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // ファイル名を取得（レスポンスヘッダーから）
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'タレント診断結果.pdf';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) {
+          filename = match[1];
+        }
+      }
+
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // クリーンアップ
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ PDFダウンロード完了:', filename);
+      }
+
+    } catch (error) {
+      console.error('❌ PDFダウンロードエラー:', error);
+      alert('PDFダウンロード中にエラーが発生しました。ネットワーク接続を確認して再度お試しください。');
+    } finally {
+      setPdfDownloading(false);
     }
   };
 
@@ -536,6 +607,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                             <Box
                               sx={{
                                 display: 'flex',
+                                flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 bgcolor: '#f8f9fa',
@@ -544,16 +616,15 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                                 mb: 1.5,
                               }}
                             >
+                              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+                                マッチングスコア
+                              </Typography>
                               <Typography
                                 variant="h5"
                                 fontWeight="bold"
                                 color="#1976d2"
-                                sx={{ mr: 0.5 }}
                               >
                                 {talent.matching_score}%
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                マッチング度
                               </Typography>
                             </Box>
 
@@ -717,14 +788,14 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                               </Typography>
                             )}
 
-                            {/* マッチ度 */}
+                            {/* マッチングスコア */}
                             <Typography
                               variant="body2"
                               color="primary"
                               fontWeight="bold"
                               sx={{ mb: 0.5 }}
                             >
-                              マッチ度 {talent.matching_score}%
+                              マッチングスコア {talent.matching_score}%
                             </Typography>
                           </Box>
                         </Box>
@@ -772,7 +843,7 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                   特別特典のご案内
                 </Typography>
 
-                {/* 白いカード形式のコンテナ */}
+                {/* 白いカード形式のコンテナ - 左右2カラムレイアウト */}
                 <Box
                   sx={{
                     bgcolor: 'white',
@@ -781,83 +852,74 @@ export function ResultsPage({ formData, onReset, apiResults, apiError, sessionId
                     boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                   }}
                 >
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                      gap: { xs: 2, md: 4 },
-                    }}
-                  >
-                    {/* 左側：簡易版タレントリストダウンロード */}
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
-                      <Box
-                        sx={{
-                          width: { xs: 48, md: 64 },
-                          height: { xs: 48, md: 64 },
-                          borderRadius: '50%',
-                          bgcolor: '#e3f2fd',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}
-                      >
-                        <Download sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
-                          簡易版タレントリストダウンロード
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 2 }}>
-                          診断結果30名のタレントリスト（マッチングスコア、基礎パワー得点、イメージ調整など）をCSV形式でダウンロードできます。
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          startIcon={<Download />}
-                          onClick={handleCsvDownload}
-                          disabled={!sessionId || csvDownloading}
+                  {/* 左右2カラム配置 */}
+                  <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: { xs: 4, md: 6 }
+                  }}>
+                    {/* 左側：ダウンロード機能セクション */}
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
+                        <Box
                           sx={{
-                            bgcolor: 'primary.main',
-                            '&:hover': { bgcolor: 'primary.dark' },
-                            fontWeight: 600,
-                            px: 3,
-                            py: 1
+                            width: { xs: 48, md: 56 },
+                            height: { xs: 48, md: 56 },
+                            borderRadius: '50%',
+                            bgcolor: '#e3f2fd',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
                           }}
                         >
-                          {csvDownloading ? 'ダウンロード中...' : 'CSVダウンロード'}
-                        </Button>
+                          <Download sx={{ fontSize: { xs: 24, md: 28 }, color: 'primary.main' }} />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#2c3e50', lineHeight: 1.3 }}>
+                            簡易版タレントリストダウンロード
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+                            ご入力いただいたメールアドレス宛にダウンロード用リンクをお送りいたしました。
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                            診断結果をまとめたリストをダウンロードしていただけます。
+                          </Typography>
+                        </Box>
                       </Box>
                     </Box>
 
-                    {/* 右側：専任アドバイザーによる無料カウンセリング */}
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
-                      <Box
-                        sx={{
-                          width: { xs: 48, md: 64 },
-                          height: { xs: 48, md: 64 },
-                          borderRadius: '50%',
-                          bgcolor: '#e3f2fd',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}
-                      >
-                        <CalendarMonth sx={{ fontSize: { xs: 24, md: 32 }, color: 'primary.main' }} />
-                      </Box>
-                      <Box>
-                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 1.5, lineHeight: 1.4 }}>
-                          専任アドバイザーによる無料カウンセリング(60分)
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
-                          経験豊富なアドバイザーに無料でご相談いただけます。
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
-                          より詳細な情報のご提供も可能です。
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                          ご希望の場合は以下のボタンよりご予約ください。
-                        </Typography>
+                    {/* 右側：専任アドバイザーセクション */}
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
+                        <Box
+                          sx={{
+                            width: { xs: 48, md: 56 },
+                            height: { xs: 48, md: 56 },
+                            borderRadius: '50%',
+                            bgcolor: '#e3f2fd',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                        >
+                          <CalendarMonth sx={{ fontSize: { xs: 24, md: 28 }, color: 'primary.main' }} />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#2c3e50', lineHeight: 1.3 }}>
+                            専任アドバイザーによる無料カウンセリング(60分)
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+                            経験豊富なアドバイザーに無料でご相談いただけます。
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+                            より詳細な情報のご提供も可能です。
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                            ご希望の場合は以下のボタンよりご予約ください。
+                          </Typography>
+                        </Box>
                       </Box>
                     </Box>
                   </Box>

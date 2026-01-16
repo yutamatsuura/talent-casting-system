@@ -13,6 +13,7 @@ class UltraOptimizedMatchingQueries:
 
     @staticmethod
     async def execute_complete_unified_matching_query(
+        budget_min: float,
         budget_max: float,
         target_segment_id: int,
         image_item_ids: List[int],
@@ -34,32 +35,28 @@ class UltraOptimizedMatchingQueries:
         # 究極統合クエリ: 既存ロジック完全移植
         ultimate_query = """
         WITH step0_budget_filter AS (
-            -- STEP 0: 予算フィルタリング（選択した予算上限以下 + m_talent_act未登録も通過） + アルコール業界年齢フィルタリング
+            -- STEP 0: 予算フィルタリング（計算列インデックス活用版） + アルコール業界年齢フィルタリング
+            -- $1 = min_budget (下限、NULLの場合は0)
+            -- $7 = max_budget (上限、NULLの場合は無限大)
             SELECT DISTINCT ma.account_id, ma.name_full_for_matching as name, ma.last_name_kana, ma.act_genre
             FROM m_account ma
             LEFT JOIN m_talent_act mta ON ma.account_id = mta.account_id
             WHERE ma.del_flag = 0  -- 有効なタレントのみ対象
               AND mta.account_id IS NOT NULL  -- 未登録タレントを除外
               AND (
-                -- パターン1: 両方設定済み（MIN有・MAX有）→ ユーザー予算がMIN以上で通過
-                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NOT NULL
-                 AND $1 >= mta.money_min_one_year)
+                -- 超高速化: 計算列インデックスを活用したシンプルな範囲チェック
+                -- money_representative_value = COALESCE(money_max_one_year, money_min_one_year)
+                (mta.money_representative_value IS NOT NULL
+                 AND mta.money_representative_value >= $1
+                 AND mta.money_representative_value < $7)
                 OR
-                -- パターン2: MIN有・MAX無 → ユーザー予算がMIN以上で通過
-                (mta.money_min_one_year IS NOT NULL AND mta.money_max_one_year IS NULL
-                 AND $1 >= mta.money_min_one_year)
-                OR
-                -- パターン3: MIN無・MAX有 → ユーザー予算がMAX以上で通過
-                (mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NOT NULL
-                 AND $1 >= mta.money_max_one_year)
-                OR
-                -- パターン4: 「1億円以上」選択時のみ両方NULL → 通過
-                ($6 = true AND mta.money_min_one_year IS NULL AND mta.money_max_one_year IS NULL)
+                -- 両方NULL: 「5,000万円以上」選択時のみ通過
+                (mta.money_representative_value IS NULL AND $6 = true)
               ) AND (
                 -- アルコール業界の場合のみ25歳以上フィルタ適用（$4で制御）
                 $4 = false OR (
-                    ma.birthday IS NOT NULL
-                    AND (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM ma.birthday)) >= 25
+                    ma.birthday IS NULL OR  -- 生年月日がない場合は通過
+                    EXTRACT(YEAR FROM AGE(CURRENT_DATE, ma.birthday)) >= 25
                 )
               )
         ),
@@ -220,12 +217,13 @@ class UltraOptimizedMatchingQueries:
         try:
             result = await conn.fetch(
                 ultimate_query,
-                budget_max,
+                budget_min,
                 target_segment_id,
                 image_item_ids,
                 is_alcohol_industry,
                 industry_name,
-                is_unlimited_budget
+                is_unlimited_budget,
+                budget_max
             )
             return [dict(row) for row in result]
         finally:
@@ -318,7 +316,7 @@ class UltraOptimizedMatchingQueries:
             if not params_result:
                 raise ValueError("パラメータ取得に失敗しました")
 
-            budget_max = float(params_result['budget_max'] or float("inf"))
+            budget_max = float(params_result['budget_max'] or 999999999999)
             target_segment_id = params_result['target_segment_id']
             image_item_ids = params_result['image_item_ids']
             is_alcohol = params_result['is_alcohol']
@@ -332,8 +330,8 @@ class UltraOptimizedMatchingQueries:
         if budget_max <= 0:
             raise ValueError("無効な予算区分です")
 
-        # 「1億円以上」選択時判定（金額NULLタレント通過用）
-        is_unlimited_budget = budget_range == "1億円以上"
+        # 「5,000万円以上」選択時判定（金額NULLタレント通過用）
+        is_unlimited_budget = budget_range == "5,000万円以上"
 
         # 2. 究極統合クエリでマッチング実行（1回のDB接続で完了）
         talent_results = await UltraOptimizedMatchingQueries.execute_complete_unified_matching_query(
