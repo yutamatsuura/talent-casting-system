@@ -134,8 +134,8 @@ class Talent(Base):
     gender = Column(String(10), nullable=True)
     birthday = Column(Date, nullable=True)
     company_name = Column(String(255), nullable=True, index=True)
-    image_file_name = Column(String(255), nullable=True)
-    pref = Column(Integer, nullable=True)
+    image_name = Column(String(255), nullable=True)
+    pref_cd = Column(Integer, nullable=True)
     url = Column(String(1000), nullable=True)
     del_flag = Column(Integer, default=0, nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -298,6 +298,8 @@ class FormSubmission(Base):
     phone = Column(String(50), nullable=True)
     genre_preference = Column(String(50), nullable=True)  # "はい"/"いいえ"
     preferred_genres = Column(Text, nullable=True)  # JSON文字列として複数ジャンルを保存
+    email_consent = Column(Boolean, nullable=False, default=False)  # メール送信同意（特定電子メール法対応）
+    email_consent_timestamp = Column(DateTime, nullable=True)  # メール送信同意日時
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -393,3 +395,50 @@ class RecommendedTalent(Base):
 
     def __repr__(self):
         return f"<RecommendedTalent(industry_name='{self.industry_name}', talent_ids=[{self.talent_id_1}, {self.talent_id_2}, {self.talent_id_3}])>"
+
+
+class TalentSNSFollowers(Base):
+    """SNSフォロワー数テーブル（Instagram、TikTok、X、YouTube）"""
+    __tablename__ = "talent_sns_followers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_id = Column(Integer, ForeignKey("m_account.account_id", ondelete="CASCADE"), unique=True, nullable=False)
+    x_followers = Column(Integer, nullable=True, comment="Xフォロワー数")
+    instagram_followers = Column(Integer, nullable=True, comment="Instagramフォロワー数")
+    tiktok_followers = Column(Integer, nullable=True, comment="TikTokフォロワー数")
+    youtube_followers = Column(Integer, nullable=True, comment="YouTube登録者数")
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # リレーションシップ
+    talent = relationship("Talent", backref="sns_followers")
+
+    # インデックス
+    __table_args__ = (
+        Index("idx_talent_sns_account", "account_id", unique=True),
+        Index("idx_talent_sns_updated", "updated_at"),
+    )
+
+    def __repr__(self):
+        return f"<TalentSNSFollowers(account_id={self.account_id}, x={self.x_followers}, ig={self.instagram_followers}, tiktok={self.tiktok_followers}, yt={self.youtube_followers})>"
+
+
+class BookingLinkPattern(Base):
+    """パターン別予約リンク管理テーブル（3パターンCTAリンク設定システム）"""
+    __tablename__ = "booking_link_patterns"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    pattern_key = Column(String(50), unique=True, nullable=False, comment="パターン識別子（high_budget/low_budget_influencer/low_budget_other）")
+    pattern_name = Column(String(100), nullable=False, comment="パターン名（日本語表示用）")
+    description = Column(Text, nullable=True, comment="パターン説明")
+    booking_url = Column(Text, nullable=False, comment="予約ページURL")
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
+
+    # インデックス
+    __table_args__ = (
+        Index("idx_booking_link_pattern_key", "pattern_key", unique=True),
+    )
+
+    def __repr__(self):
+        return f"<BookingLinkPattern(pattern_key='{self.pattern_key}', pattern_name='{self.pattern_name}')>"

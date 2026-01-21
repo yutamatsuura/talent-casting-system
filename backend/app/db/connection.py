@@ -96,6 +96,63 @@ async def check_db_connection() -> bool:
             await release_asyncpg_connection(conn)
 
 
+async def ensure_booking_link_patterns_table():
+    """booking_link_patterns テーブルの存在確認と作成"""
+    conn = None
+    try:
+        conn = await get_asyncpg_connection()
+
+        # テーブル存在確認
+        exists = await conn.fetchval("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_name = 'booking_link_patterns'
+            )
+        """)
+
+        if not exists:
+            print("📋 booking_link_patterns テーブルが存在しません。作成します...")
+
+            # テーブル作成
+            await conn.execute("""
+                CREATE TABLE booking_link_patterns (
+                    id SERIAL PRIMARY KEY,
+                    pattern_key VARCHAR(50) UNIQUE NOT NULL,
+                    pattern_name VARCHAR(100) NOT NULL,
+                    description TEXT,
+                    booking_url TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP
+                )
+            """)
+
+            # インデックス作成
+            await conn.execute("""
+                CREATE INDEX idx_booking_link_patterns_key
+                ON booking_link_patterns(pattern_key)
+            """)
+
+            # 初期データ投入
+            await conn.execute("""
+                INSERT INTO booking_link_patterns (pattern_key, pattern_name, description, booking_url) VALUES
+                ('high_budget', '高予算（1,000万円以上）', '予算が「1,000万～3,000万円未満」「3,000万～5,000万円未満」「5,000万円以上」の場合', 'https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm'),
+                ('low_budget_influencer', '低予算×インフルエンサー', '予算が「500万円未満」「500万～1,000万円未満」かつ希望ジャンルに「インフルエンサー」が含まれる場合', 'https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm'),
+                ('low_budget_other', '低予算×その他', '予算が「500万円未満」「500万～1,000万円未満」かつ希望ジャンルが「インフルエンサー以外」または「ジャンル希望なし」の場合', 'https://app.spirinc.com/t/W63rJQN01CTXR-FjsFaOr/as/8FtIxQriLEvZxYqBlbzib/confirm')
+            """)
+
+            print("✅ booking_link_patterns テーブル作成完了（初期データ3件投入）")
+        else:
+            print("✅ booking_link_patterns テーブル存在確認OK")
+
+    except Exception as e:
+        print(f"⚠️  booking_link_patterns テーブル確認エラー: {e}")
+        # エラーが発生してもアプリケーション起動は継続
+    finally:
+        if conn:
+            await release_asyncpg_connection(conn)
+
+
 async def init_db():
     """データベース初期化（アプリケーション起動時、Phase A1最適化）"""
     global engine, async_session_maker
@@ -125,6 +182,9 @@ async def init_db():
 
     # asyncpgプール初期化 (Phase A1最適化)
     await init_asyncpg_pool()
+
+    # booking_link_patterns テーブルの存在確認と作成
+    await ensure_booking_link_patterns_table()
 
 
 async def get_db_session() -> AsyncSession:

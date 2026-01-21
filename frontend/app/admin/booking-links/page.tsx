@@ -53,10 +53,12 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 
-// 業界別予約リンクデータの型定義
+// パターン別予約リンクデータの型定義（新スキーマ対応）
 interface BookingLinkData {
   id: number;
-  industry_name: string;
+  pattern_key: string;       // パターン識別子（high_budget/low_budget_influencer/low_budget_other）
+  pattern_name: string;      // パターン名（表示用）
+  description: string;       // パターン説明
   booking_url: string;
   created_at: string;
   updated_at: string | null;
@@ -72,7 +74,7 @@ export default function BookingLinksPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 業界別予約リンク管理用のstate
+  // パターン別予約リンク管理用のstate
   const [bookingLinks, setBookingLinks] = useState<BookingLinkData[]>([]);
   const [editingLinkId, setEditingLinkId] = useState<number | null>(null);
   const [editingLinkUrl, setEditingLinkUrl] = useState('');
@@ -96,36 +98,36 @@ export default function BookingLinksPage() {
     fetchBookingLinks();
   }, [router]);
 
-  // 業界別予約リンク取得
+  // パターン別予約リンク取得
   const fetchBookingLinks = async () => {
     setLoading(true);
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8432';
       const response = await fetch(`${API_BASE_URL}/api/admin/booking-links`);
-      if (!response.ok) throw new Error('業界別予約リンクデータの取得に失敗しました');
+      if (!response.ok) throw new Error('予約リンクデータの取得に失敗しました');
       const links = await response.json();
       setBookingLinks(links);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '業界別予約リンクデータの取得に失敗しました');
+      setError(err instanceof Error ? err.message : '予約リンクデータの取得に失敗しました');
     } finally {
       setLoading(false);
     }
   };
 
-  // 業界別予約リンク編集開始
+  // 予約リンク編集開始
   const handleEditBookingLink = (link: BookingLinkData) => {
     setEditingLinkId(link.id);
     setEditingLinkUrl(link.booking_url);
   };
 
-  // 業界別予約リンク編集キャンセル
+  // 予約リンク編集キャンセル
   const handleCancelEditBookingLink = () => {
     setEditingLinkId(null);
     setEditingLinkUrl('');
   };
 
-  // 業界別予約リンク保存
+  // 予約リンク保存
   const handleSaveBookingLink = async (linkId: number) => {
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8432';
@@ -252,7 +254,7 @@ export default function BookingLinksPage() {
                 WebkitTextFillColor: 'transparent',
                 fontSize: isMobile ? '1.1rem' : '1.5rem'
               }}>
-                業界別予約リンク管理
+                予約リンク管理
               </Typography>
             </Box>
 
@@ -306,13 +308,47 @@ export default function BookingLinksPage() {
           }}>
             <CardContent sx={{ p: 4 }}>
               <Typography variant="h4" gutterBottom fontWeight="600" sx={{ mb: 3, color: '#1f2937' }}>
-                🔗 業界別予約リンク管理
+                🔗 予約リンク管理
               </Typography>
 
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                各業界の診断結果ページで表示される予約ボタンのリンク先を管理できます。
-                編集したい業界の「編集」ボタンをクリックして、URLを変更してください。
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.8 }}>
+                診断結果ページで表示される予約ボタンのリンク先を3つのパターン別に管理できます。
+                <br />
+                ユーザーの予算とジャンル選択に応じて、自動的に適切なリンクが選択されます。
               </Typography>
+
+              {/* パターン説明カード */}
+              <Box sx={{
+                mb: 4,
+                p: 3,
+                backgroundColor: '#f0f9ff',
+                borderRadius: 2,
+                border: '1px solid #bae6fd'
+              }}>
+                <Typography variant="h6" sx={{ mb: 2, color: '#0369a1', fontWeight: 600 }}>
+                  📋 リンク選択ルール
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, mb: 0 }}>
+                  <Box component="li" sx={{ mb: 1.5 }}>
+                    <Typography variant="body2" sx={{ color: '#374151' }}>
+                      <strong>高予算（1,000万円以上）：</strong>
+                      予算が「1,000万～3,000万円未満」「3,000万～5,000万円未満」「5,000万円以上」の場合
+                    </Typography>
+                  </Box>
+                  <Box component="li" sx={{ mb: 1.5 }}>
+                    <Typography variant="body2" sx={{ color: '#374151' }}>
+                      <strong>低予算×インフルエンサー：</strong>
+                      予算が「500万円未満」「500万～1,000万円未満」かつ希望ジャンルに「インフルエンサー」が含まれる場合
+                    </Typography>
+                  </Box>
+                  <Box component="li">
+                    <Typography variant="body2" sx={{ color: '#374151' }}>
+                      <strong>低予算×その他：</strong>
+                      予算が「500万円未満」「500万～1,000万円未満」かつ希望ジャンルが「インフルエンサー以外」または「ジャンル希望なし」の場合
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
 
               {error && (
                 <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -336,7 +372,7 @@ export default function BookingLinksPage() {
                 }}>
                   <LinkIcon sx={{ fontSize: 64, color: '#cbd5e1', mb: 2 }} />
                   <Typography variant="h6" color="text.secondary" gutterBottom>
-                    業界別予約リンクデータがありません
+                    予約リンクデータがありません
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     データベースから予約リンク情報を取得できませんでした
@@ -360,7 +396,10 @@ export default function BookingLinksPage() {
                           }}
                         >
                           <Typography variant="h6" sx={{ fontWeight: 600, color: '#374151' }}>
-                            {link.industry_name}
+                            {link.pattern_name}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#6b7280', mt: 0.5 }}>
+                            {link.description}
                           </Typography>
                         </AccordionSummary>
                         <AccordionDetails sx={{ pt: 2 }}>
@@ -444,9 +483,9 @@ export default function BookingLinksPage() {
                           backgroundColor: '#f8fafc',
                           color: '#374151',
                           borderBottom: '2px solid #e2e8f0',
-                          width: '200px'
+                          width: '280px'
                         }}>
-                          業界名
+                          パターン名・条件
                         </TableCell>
                         <TableCell sx={{
                           fontWeight: 600,
@@ -481,7 +520,12 @@ export default function BookingLinksPage() {
                           }}
                         >
                           <TableCell sx={{ fontWeight: 500, color: '#374151', verticalAlign: 'top' }}>
-                            {link.industry_name}
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                              {link.pattern_name}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mt: 0.5 }}>
+                              {link.description}
+                            </Typography>
                           </TableCell>
                           <TableCell sx={{ verticalAlign: 'top' }}>
                             {editingLinkId === link.id ? (
